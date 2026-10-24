@@ -4,7 +4,7 @@ Autor: @mmichalskii1
 
 ## 1. Definicja pary
 
-Cena aktywa na giełdzie jest zawsze wyrażona w innym aktywie. Para BNB/USDT, w API `BNBUSDT`, określa, ile USDT kosztuje 1 BNB. Obie pary w analizie są kwotowane w USDT, więc ceny i zwroty są w tej samej jednostce i można je porównywać. Pary z USDT mają też na Binance największy obrót i najdłuższą historię.
+Cena aktywa na giełdzie jest zawsze wyrażona w innym aktywie. Para BNB/USDT, w API `BNBUSDT`, określa, ile USDT kosztuje 1 BNB. Obie pary w analizie są kwotowane w USDT, więc ceny i zwroty są w tej samej jednostce i można je porównywać. Pary z USDT mają też na Binance największy obrót.
 
 ## 2. Wybrane pary
 

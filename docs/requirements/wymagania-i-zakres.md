@@ -35,7 +35,7 @@ Poza zakresem:
 
 - Para, np. BNB/USDT, to cena 1 BNB wyrażona w USDT. W API zapisywana jako `BNBUSDT`.
 - USDT to stablecoin powiązany z dolarem, 1 USDT to około 1 dolar.
-- UTC to uniwersalny czas koordynowany, na którym opiera się cały świat. W Polsce jest o 1 godzinę wcześniejszy od czasu lokalnego zimą i o 2 godziny latem.
+- UTC, czyli uniwersalny czas koordynowany, to światowy standard czasu bez zmiany na czas letni. Czas polski to UTC+1 zimą i UTC+2 latem.
 - Świeca dzienna to podsumowanie dnia handlu: cena otwarcia, najwyższa, najniższa, zamknięcia i wolumen. Dzień liczony jest w UTC.
 - Zwrot to procentowa zmiana ceny z dnia na dzień.
 - Zmienność to rozrzut zwrotów, liczony jako odchylenie standardowe.
@@ -45,6 +45,8 @@ Poza zakresem:
 ## 5. Użytkownicy
 
 Aplikacja jest dla osób znających podstawy statystyki, ale niekoniecznie rynek kryptowalut, więc przy wskaźnikach są krótkie wyjaśnienia.
+
+## 6. Historyjki użytkownika
 
 ### 6.1. Wykres ceny BNB, konieczne
 
@@ -66,7 +68,7 @@ Jako użytkownik chcę wybrać zakres dat analizy.
 ### 6.3. Tabela statystyk, konieczne
 
 Jako użytkownik chcę zobaczyć najważniejsze statystyki w jednym miejscu.
-- tabela zawiera: liczbę dni, średni zwrot, medianę, odchylenie standardowe, zmienność roczną, najgorszy i najlepszy dzień z datami, skośność, kurtozę, maksymalne obsunięcie, zwrot za cały okres i CAGR,
+- tabela zawiera: liczbę dni, średni zwrot, medianę, odchylenie standardowe dziennych zwrotów logarytmicznych, zmienność roczną, najgorszy i najlepszy dzień z datami, odsetek dni wzrostowych, skośność, kurtozę, maksymalne obsunięcie, zwrot za cały okres i CAGR,
 - przy każdej wartości jest krótki opis,
 - wyniki są zgodne z obliczeniami kontrolnymi.
 
@@ -121,7 +123,7 @@ Szczegóły źródła są w rozdziale 10, a wzory w dokumencie o metodach.
 
 - wykres ceny i wybór okresu na górze, niżej tabela statystyk i pozostałe wykresy,
 - widoczne stany ładowania i błędów zamiast pustych wykresów,
-- interfejs po polsku, procenty z dwoma miejscami po przecinku, pozostałe liczby z czterema,
+- interfejs po polsku, procenty z dwoma miejscami po przecinku, ceny w USDT z dwoma, wolumen w milionach USDT, a wskaźniki bez jednostki, takie jak skośność, kurtoza, korelacja i beta, z czterema,
 - działanie w Chrome, Firefoxie i Edge oraz na telefonach,
 - stopka ze źródłem danych i zastrzeżeniem o edukacyjnym charakterze projektu.
 
@@ -161,12 +163,12 @@ Każda świeca w odpowiedzi to tablica 12 wartości:
  "45460.00700000", "34047834.79001000", "0"]
 ```
 
-Używane pola:
+Używane pola, numerowane od 0:
 - 0: czas otwarcia w ms, z którego pochodzi data dnia,
 - 1 do 4: ceny otwarcia, najwyższa, najniższa i zamknięcia, przy czym zamknięcie jest podstawą analizy,
-- 5: wolumen w BNB,
+- 5: wolumen w walucie bazowej, czyli BNB dla `BNBUSDT` i BTC dla `BTCUSDT`,
 - 6: czas zamknięcia w ms, potrzebny do odrzucenia niezamkniętej świecy,
-- 7: wolumen w USDT, używany w analizie wolumenu,
+- 7: wolumen w walucie kwotowania, czyli w USDT, używany w analizie wolumenu,
 - 8: liczba transakcji, opcjonalnie.
 
 Pozostałe pola są nieużywane. Ceny i wolumeny są tekstem, czasy liczbami.
@@ -196,7 +198,7 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 - Rynek działa całą dobę, 7 dni w tygodniu, więc każdy dzień ma świecę, a brak dnia oznacza lukę w danych.
 - Dzień liczony jest w UTC. Świeca z datą 12.10 obejmuje 12.10 od 00:00 do 23:59:59 UTC, czyli w Polsce latem od 2:00 12.10 do 1:59 13.10. Ceną dnia jest cena zamknięcia.
 - Ceny par mają różną skalę, BNB kosztuje setki USDT, a BTC dziesiątki tysięcy, dlatego porównywane są zwroty, a nie ceny. Wykres BNB na tle BTC pokazuje zmianę procentową od początku okresu, oba szeregi startują od 0%.
-- W analizie używany jest wolumen w USDT, czyli wartość obrotu, bo jest porównywalny między dniami i parami. Wolumen w BNB to tylko liczba monet.
+- W analizie używany jest wolumen w USDT, czyli wartość obrotu, bo jest porównywalny między dniami i parami. Wolumen w walucie bazowej, czyli BNB albo BTC, to tylko liczba monet.
 
 ### 11.2. Konwencje liczb
 
@@ -209,7 +211,7 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 
 - wykres ceny: 1 dzień,
 - statystyki opisowe: 2 zwroty,
-- CAGR: 365 dni,
+- CAGR: okres co najmniej 365 dni,
 - zmienność okresu: 2 zwroty, wiarygodnie od 30,
 - zmienność krocząca: 31 cen, czyli 30 zwrotów,
 - SMA i EMA: tyle cen, ile wynosi okno, czyli 20, 50 lub 200,
@@ -218,7 +220,7 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 - histogram: 2 zwroty, wiarygodnie od 30,
 - korelacja i beta z BTC: 2 wspólne zwroty, wiarygodnie od 30,
 - korelacja krocząca: 90 wspólnych zwrotów,
-- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim,
+- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla opcjonalnego okna od −5 do +5 dni 5 dni po nim,
 - wolumen: wiarygodnie od 30.
 
 Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało danych, wymagane 365 dni”. Między minimum a poziomem wiarygodnym wynik jest liczony z ostrzeżeniem.
@@ -239,8 +241,8 @@ Propozycje krótkich wyjaśnień:
 - maksymalne obsunięcie: największy spadek ceny od szczytu w okresie,
 - CAGR: średni roczny zwrot przy stałym tempie zmian,
 - skośność: wartość ujemna oznacza przewagę dużych spadków nad dużymi wzrostami,
-- kurtoza: wartość powyżej 0 oznacza, że dni skrajne zdarzały się częściej niż zwykle,
-- korelacja z BTC: 1 oznacza pełną zgodność ruchów, 0 brak związku,
+- kurtoza: wartość powyżej 0 oznacza, że dni skrajne zdarzały się częściej niż w rozkładzie normalnym, w którym wartości skrajne są bardzo rzadkie,
+- korelacja z BTC: 1 oznacza pełną zgodność ruchów, 0 brak związku liniowego,
 - beta: średnia procentowa zmiana BNB przy zmianie BTC o 1%,
 - SMA 200: średnia cena z ostatnich 200 dni, pokazuje długoterminowy trend,
 - zwrot nadzwyczajny: część zmiany ceny BNB, której nie wyjaśnia ruch całego rynku.

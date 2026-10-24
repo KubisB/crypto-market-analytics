@@ -8,7 +8,7 @@ Dokument opisuje, co jest liczone i jakimi wzorami. Niektóre statystyki mają k
 
 ## 2. Dane i oznaczenia
 
-Analiza opiera się na cenach zamknięcia dziennych świec z Binance: `BNBUSDT` oraz porównawczo `BTCUSDT`. Dzień liczony jest w UTC, czyli w uniwersalnym czasie koordynowanym, który w Polsce jest o 1 godzinę wcześniejszy od czasu lokalnego zimą i o 2 godziny latem. Uwzględniane są tylko zamknięte świece.
+Analiza opiera się na cenach zamknięcia dziennych świec z Binance: `BNBUSDT` oraz porównawczo `BTCUSDT`. Dzień liczony jest w UTC, którego definicja jest w dokumencie wymagań. Uwzględniane są tylko zamknięte świece.
 
 - $P_t$ to cena zamknięcia w dniu $t$,
 - $r_t$ to zwrot prosty, $R_t$ to zwrot logarytmiczny,
@@ -42,7 +42,7 @@ Na zwrotach prostych:
 - najgorszy i najlepszy dzień z datą,
 - odsetek dni wzrostowych, bez dni o zerowej zmianie,
 - zwrot za cały okres, $P_N/P_0 - 1$,
-- średni roczny zwrot CAGR, $(P_N/P_0)^{365/n} - 1$, tylko dla okresów co najmniej rocznych.
+- średni roczny zwrot CAGR, $(P_N/P_0)^{365/d} - 1$, gdzie $d$ to liczba dni kalendarzowych między datą pierwszej i ostatniej ceny. Liczony tylko wtedy, gdy $d \ge 365$.
 
 Przy mniej niż 2 zwrotach statystyki nie są liczone.
 
@@ -58,7 +58,7 @@ s = \sqrt{\frac{1}{n-1}\sum_{t=1}^{n}\left(R_t - \bar{R}\right)^2}
 \sigma_{\text{rok}} = s \cdot \sqrt{365}
 $$
 
-Dla porównania indeksy akcji mają zmienność roczną 15 do 25%, kryptowaluty często kilkadziesiąt procent.
+Dzienne odchylenie $s$ jest podawane w tabeli statystyk obok zmienności rocznej. Dla porównania indeksy akcji mają zmienność roczną 15 do 25%, kryptowaluty często kilkadziesiąt procent.
 
 ### 5.2. Zmienność krocząca
 
@@ -100,7 +100,7 @@ $$
 G_2 = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum \left(\frac{R_t - \bar{R}}{s}\right)^4 - \frac{3(n-1)^2}{(n-2)(n-3)}
 $$
 
-Kurtoza jest nadwyżkowa, czyli dla rozkładu normalnego wynosi około 0. Wartość dodatnia oznacza grube ogony, czyli częstsze dni skrajne, co na rynku krypto jest typowe. Ujemna skośność oznacza przewagę dużych spadków nad dużymi wzrostami. Uwaga na biblioteki: `scipy.stats.kurtosis` domyślnie liczy wersję nieskorygowaną.
+Kurtoza jest nadwyżkowa, czyli dla rozkładu normalnego, w którym wartości skrajne są bardzo rzadkie, wynosi około 0. Wartość dodatnia oznacza grube ogony, czyli dni skrajne częstsze niż w rozkładzie normalnym, co na rynku krypto jest typowe. Ujemna skośność oznacza przewagę dużych spadków nad dużymi wzrostami. Uwaga na biblioteki: `scipy.stats.kurtosis` domyślnie liczy wersję nieskorygowaną.
 
 ### 8.2. Histogram
 
@@ -121,7 +121,7 @@ $$
 $$
 
 Beta to nachylenie regresji $R_t = \alpha + \beta M_t$, w Excelu `SLOPE`. Liczony jest też $R^2 = \rho^2$. Interpretacja:
-- korelacja poniżej 0,3 to związek słaby, 0,3 do 0,7 umiarkowany, powyżej 0,7 silny,
+- korelacja poniżej 0,3 to związek słaby, 0,3 do 0,7 umiarkowany, powyżej 0,7 silny, a wartość bliska 0 oznacza brak związku liniowego,
 - beta około 1 oznacza podobne ruchy BNB i BTC, powyżej 1 silniejszą reakcję BNB, poniżej 1 słabszą,
 - $R^2$ to część ruchów BNB wyjaśniona przez rynek, a $1 - R^2$ to ruch specyficzny dla BNB.
 
@@ -140,7 +140,7 @@ Analiza zdarzeń sprawdza, czy przy ważnych wydarzeniach cena BNB zachowywała 
 
 Procedura:
 1. Na dniach od −120 do −11 przed wydarzeniem szacowana jest regresja $R_t = \alpha + \beta M_t$. Przerwa przed wydarzeniem ogranicza wpływ przecieków informacji.
-2. W oknie wydarzenia, czyli dzień przed, w dniu wydarzenia i dzień po, liczony jest zwrot nadzwyczajny, czyli część ruchu niewyjaśniona przez BTC: $AR_t = R_t - (\hat{\alpha} + \hat{\beta} M_t)$. Opcjonalnie liczone jest też okno od −5 do +5 dni.
+2. W oknie wydarzenia, czyli dzień przed, w dniu wydarzenia i dzień po, liczony jest zwrot nadzwyczajny, czyli część ruchu niewyjaśniona przez BTC: $AR_t = R_t - (\hat{\alpha} + \hat{\beta} M_t)$. Opcjonalnie liczone jest też okno od −5 do +5 dni, które wymaga 5 dni danych po wydarzeniu.
 3. Zwroty nadzwyczajne są sumowane: $CAR = \sum AR_t$.
 4. Istotność sprawdza $t = CAR / (s_\varepsilon \sqrt{T})$, gdzie $s_\varepsilon$ to odchylenie reszt z kroku 1 z dzielnikiem $L-2$, a $T$ to długość okna wydarzenia. Wartość $|t| > 1{,}96$ oznacza reakcję istotną na poziomie 5%.
 
@@ -148,7 +148,7 @@ Wyraźnie ujemny CAR oznacza, że BNB spadł mocniej, niż wynikałoby z ruchu B
 
 ## 10. Wolumen
 
-Używany jest wolumen w USDT, czyli ósme pole świecy. Badana jest korelacja między wielkością ruchu ceny $|R_t|$ a logarytmem wolumenu, który ogranicza wpływ dni z ogromnym obrotem. Oczekiwany jest związek dodatni.
+Używany jest wolumen w USDT, czyli pole o indeksie 7 świecy z API, liczonym od 0. Badana jest korelacja między wielkością ruchu ceny $|R_t|$ a logarytmem wolumenu, który ogranicza wpływ dni z ogromnym obrotem. Oczekiwany jest związek dodatni.
 
 ## 11. Dane testowe
 
@@ -156,18 +156,18 @@ Przykłady na wymyślonych cenach, do sprawdzenia, czy wzory z tego dokumentu s�
 
 ### 11.1. Pięć cen
 
-Ceny: 100, 110, 99, 108,9, 102,366. Zwroty proste: 0,10; −0,10; 0,10; −0,06. Oczekiwane wyniki:
+Ceny: 100, 110, 99, 108,9, 102,366. Zwroty proste: 0,10; −0,10; 0,10; −0,06. Oczekiwane wyniki, każdy na zwrotach tego rodzaju, na jakich liczy go dokument:
 - zwroty logarytmiczne: 0,0953101798; −0,1053605157; 0,0953101798; −0,0618754037, o sumie 0,0233844402,
-- średnia zwrotów prostych: 0,01,
-- odchylenie standardowe zwrotów prostych z dzielnikiem n−1: 0,1051982256, a razy √365: 2,0098092779,
+- średnia zwrotów prostych: 0,01, a mediana zwrotów prostych: 0,02,
+- odchylenie standardowe zwrotów logarytmicznych z dzielnikiem n−1: 0,1048185044, a razy √365: 2,0025547144,
 - zwrot za okres: 0,02366,
 - maksymalne obsunięcie: −0,10, szczyt 110, dołek 99, bez powrotu do szczytu,
 - SMA z 3 dni na końcu: 103,422,
-- skośność $G_1$ zwrotów prostych: −0,1236907573, kurtoza $G_2$: −5,2901727391. Przy 4 obserwacjach nie mają znaczenia statystycznego, służą tylko do sprawdzenia wzoru.
+- skośność $G_1$ zwrotów logarytmicznych: −0,1468980258, kurtoza $G_2$: −5,1579652449. Przy 4 obserwacjach nie mają znaczenia statystycznego, służą tylko do sprawdzenia wzoru.
 
 ### 11.2. Korelacja i beta
 
-Zwroty BNB: 0,10; −0,10; 0,10; −0,06. Zwroty BTC: 0,02; −0,01; 0,03; −0,02. Oczekiwane wyniki: korelacja 0,9317610191, beta 4,1176470588.
+Ten test sprawdza sam wzór na dwóch dowolnych szeregach, wpisanych wprost, a nie wyliczonych z cen. Szereg BNB: 0,10; −0,10; 0,10; −0,06. Szereg BTC: 0,02; −0,01; 0,03; −0,02. Oczekiwane wyniki: korelacja 0,9317610191, beta 4,1176470588.
 
 ## 12. Weryfikacja wyników
 
