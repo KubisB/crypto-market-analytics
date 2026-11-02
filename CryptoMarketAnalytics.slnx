@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/backend/CryptoMarketAnalytics.Api/CryptoMarketAnalytics.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/backend/CryptoMarketAnalytics.Api.Tests/CryptoMarketAnalytics.Api.Tests.csproj" />
+  </Folder>
+</Solution>

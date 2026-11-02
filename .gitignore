@@ -1,0 +1,41 @@
+# Single .gitignore for the whole repository. Patterns without a leading slash match at any depth.
+
+# .NET build output and test results
+bin/
+obj/
+TestResults/
+
+# Frontend (Node, Vite, Vitest, ESLint, TypeScript)
+node_modules/
+dist/
+coverage/
+*.local
+*.tsbuildinfo
+.eslintcache
+__screenshots__/
+*.timestamp-*-*.mjs
+
+# Python (analysis notebooks)
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+
+# Secrets — only .env.example is committed
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Editors: share only the team VS Code settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.vs/
+.idea/
+*.user
+
+# Operating systems (macOS, Windows)
+.DS_Store
+Thumbs.db
