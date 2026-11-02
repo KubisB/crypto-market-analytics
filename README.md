@@ -1,9 +1,9 @@
 # crypto-market-analytics
 
-A web application that fetches cryptocurrency market data from an external API, processes it, runs statistical analysis and presents the results as charts and summaries. Built as part of the **Group Practical Project** (*Grupowy projekt praktyczny*) course.
+A web application that fetches daily BNB/USDT market data from the public Binance API, runs statistical analysis on it and presents the results as charts and summaries, using bitcoin (BTC/USDT) as the market benchmark. Built as part of the **Group Practical Project** (*Grupowy projekt praktyczny*) course.
 
-> **Status:** early stage — project assumptions and the base repository structure are being defined.
-> Items marked **[TBD]** have not been decided by the team yet.
+> **Status:** early stage — requirements and analysis methods are documented; the application code has not been started yet.
+> Items marked **[TBD]** have not been decided by the team yet. Items marked _(planned)_ do not exist in the repository yet.
 
 ---
 
@@ -29,18 +29,19 @@ The project is carried out at the request of the course supervisor and is the ba
 
 ## 2. Goal and scope
 
-**Goal:** build an application that retrieves market data from a cryptocurrency exchange API, performs statistical analysis on it and presents the results to the user.
+**Goal:** build an application that retrieves daily BNB/USDT candles from Binance, analyses how BNB behaves on its own and against the market (BTC/USDT), and presents the results to the user.
 
 **In scope:**
-- fetching market data from an external API **[which API: TBD]**,
-- data processing and transformation (cleaning, aggregation, reshaping),
-- statistical calculations **[list of methods: TBD]**,
-- charts and result presentation in a web interface,
+- fetching daily OHLCV candles for `BNBUSDT` and `BTCUSDT` from the public Binance REST API (no account or API key) and storing them locally,
+- data validation and calculation of daily returns,
+- statistical analysis: descriptive statistics, volatility, drawdowns, return distribution, correlation and beta against BTC, event study around Binance-related events and volume analysis — see [`docs/analysis/metody-statystyczne.md`](docs/analysis/metody-statystyczne.md),
+- charts and tables in a Vue.js web interface with a selectable date range (from 1 January 2023 to yesterday),
 - project and analysis documentation,
 - application testing.
 
-> This is an educational project. Results of the analyses are not investment advice.
+**Out of scope:** trading, price forecasting and investment recommendations, real-time data, user accounts, exchanges other than Binance. Full scope: [`docs/requirements/wymagania-i-zakres.md`](docs/requirements/wymagania-i-zakres.md).
 
+> This is an educational project. Results of the analyses are not investment advice.
 
 ## 3. Team and responsibilities
 
@@ -50,7 +51,7 @@ The project is carried out at the request of the course supervisor and is the ba
 | [@maciekk707](https://github.com/maciekk707) | Development | Frontend; split with backend |
 | [@elkrix](https://github.com/elkrix) | Documentation and analysis | Project documentation, statistical analysis |
 | [@mmichalskii1](https://github.com/mmichalskii1) | Documentation and analysis | Project documentation, statistical analysis |
-| K | QA | Test strategy, testing, quality verification |
+| [@KusmierekKuba](https://github.com/KusmierekKuba) | QA | Test strategy, testing, quality verification |
 
 
 ## 4. Tech stack
@@ -58,41 +59,44 @@ The project is carried out at the request of the course supervisor and is the ba
 | Layer | Technology | Status |
 |---|---|---|
 | Backend | C# / .NET (version: [TBD]) | **[TBD]** |
-| Frontend | Vue.js | **[TBD]** |
-| Data source | External cryptocurrency exchange API _[which one: TBD]_ | |
-| Data storage | In-memory cache; no database assumed at the start or simply SQLite | **[TBD]** |
+| Frontend | Vue.js | Decided |
+| Data source | Binance public REST API (`https://data-api.binance.vision`, `GET /api/v3/klines`), daily candles, no API key | Decided |
+| Data storage | Local storage of downloaded candles; form (e.g. SQLite or files) _[TBD]_ | **[TBD]** |
 | Backend tests | _[e.g. xUnit]_ | **[TBD]** |
-| E2E tests | _[TBD]_ | |
-| Data analysis | _[e.g. notebooks, scripts, spreadsheets]_ | **[TBD]** |
+| E2E tests | _[TBD]_ | **[TBD]** |
+| Data analysis and verification | Python, Jupyter notebooks (pandas, numpy, scipy, matplotlib) | Decided |
 | Version control | Git | |
 
 
 ## 5. Architecture overview
 
-_[Short description, 3–5 sentences: where the data comes from, where it is processed, how it reaches the user. A simple diagram will be added later.]_
+Daily candles for `BNBUSDT` and `BTCUSDT` are downloaded from the public Binance API once a day, after the daily candle closes at midnight UTC. Only closed candles are kept; they are validated and stored locally, so the application can still show the last saved data when the API is unavailable. Returns and statistics are calculated from the stored data and presented in the Vue.js interface as charts and tables. Results are cross-checked against reference calculations in Python. Where the calculations run (backend or frontend) **[TBD]**; a diagram will be added later.
 
-Details and technical decisions will be kept in `docs/architecture/`.
+Details and technical decisions will be kept in `docs/architecture/` _(planned)_.
 
 
 ## 6. Repository structure
 
+Target structure. Entries marked _(planned)_ will be added together with the application skeleton.
+
 ```
 crypto-market-analytics/
 ├── docs/                          # project and analysis documentation
-│   ├── analysis/                  # statistical analysis, results, conclusions
-│   ├── architecture/              # architecture, diagrams, technical decisions
+│   ├── analysis/                  # statistical methods, pair selection, results
+│   │   └── notebooks/             # Jupyter notebooks for analysis and verification (planned)
+│   ├── architecture/              # architecture, diagrams, technical decisions (planned)
 │   └── requirements/              # requirements, scope, user stories
-├── src/
+├── src/                           # (planned)
 │   ├── backend/                   # backend application (C# / .NET)
 │   └── frontend/                  # frontend application (Vue.js)
-├── tests/
+├── tests/                         # (planned)
 │   ├── backend/                   # unit and integration tests
 │   └── e2e/                       # end-to-end tests
-├── .editorconfig                  # shared code formatting rules
+├── .editorconfig                  # shared code formatting rules (planned)
 ├── .gitignore
-├── AGENTS.md                      # guidelines for AI assistants working on the repository
-├── CLAUDE.md                      # points Claude Code to AGENTS.md
-├── CryptoMarketAnalytics.sln      # .NET solution
+├── AGENTS.md                      # guidelines for AI assistants working on the repository (planned)
+├── CLAUDE.md                      # points Claude Code to AGENTS.md (planned)
+├── CryptoMarketAnalytics.sln      # .NET solution (planned)
 └── README.md
 ```
 
@@ -104,6 +108,7 @@ crypto-market-analytics/
 - Git
 - .NET SDK _[version]_
 - Node.js _[version]_ and npm (frontend)
+- Python 3 with Jupyter, pandas, numpy, scipy and matplotlib (analysis notebooks only)
 
 ### Steps
 
@@ -132,8 +137,9 @@ _[Commands to be verified and completed once the first code is in place.]_
 ## 8. Configuration
 
 - Application settings: `appsettings.json` and `appsettings.Development.json`.
-- API keys and other secrets (e.g. for the exchange API) are **never committed to the repository**.
-  The required values are listed in `.env.example` _[to be created]_; copy it to `.env` and fill in your own values.
+- The Binance market data API is public, so **no API key is needed** to run the application at the start.
+- If secrets are added later, they are **never committed to the repository**.
+  The required values will be listed in `.env.example` _(planned)_; copy it to `.env` and fill in your own values.
 - `.env` and any other secrets are excluded in `.gitignore`.
 
 
@@ -143,16 +149,17 @@ Project documentation lives in `docs/` and is written in Polish.
 
 | Document | Location |
 |---|---|
-| Requirements and scope | `docs/requirements/` |
-| Architecture | `docs/architecture/` |
-| Statistical analysis | `docs/analysis/` |
+| Requirements and scope, data source (Binance API) | [`docs/requirements/wymagania-i-zakres.md`](docs/requirements/wymagania-i-zakres.md) |
+| Statistical methods, formulas and test data | [`docs/analysis/metody-statystyczne.md`](docs/analysis/metody-statystyczne.md) |
+| Choice of trading pairs | [`docs/analysis/wybor-par-walutowych.md`](docs/analysis/wybor-par-walutowych.md) |
+| Architecture | `docs/architecture/` _(planned)_ |
 
 
 ## 10. AI usage policy
 
 The team uses AI assistants (e.g. Claude, Copilot) as part of the development
-and documentation process. Shared instructions for AI tools live in
-[`AGENTS.md`](AGENTS.md).
+and documentation process. Shared instructions for AI tools will live in
+`AGENTS.md` _(planned)_.
 
 Ground rules:
 - AI output is a draft. The author of a change is responsible for reviewing,
