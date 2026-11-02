@@ -1,0 +1,9 @@
+# Python dependencies for the analysis and verification notebooks.
+# Exact versions, so that everyone gets the same numerical results.
+# Requires Python 3.12 or newer.
+pandas==3.1.0
+numpy==2.5.4
+scipy==1.18.1
+matplotlib==3.11.2
+jupyterlab==4.6.5
+ipykernel==7.4.0

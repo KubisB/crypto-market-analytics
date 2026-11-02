@@ -88,7 +88,7 @@ crypto-market-analytics/
 │   └── settings.json                      # shared VS Code settings (format on save, ESLint for src/frontend)
 ├── docs/                                  # project and analysis documentation (Polish)
 │   ├── analysis/                          # statistical methods, pair selection, results
-│   │   └── notebooks/                     # Jupyter notebooks for analysis and verification (planned)
+│   │   └── notebooks/                     # Jupyter notebooks for analysis and verification, requirements.txt
 │   ├── architecture/                      # architecture, diagrams, technical decisions (planned)
 │   └── requirements/                      # requirements, scope, user stories
 ├── src/
@@ -119,7 +119,7 @@ Frontend unit tests live next to the code, in `src/frontend/src/**/__tests__/`.
 - Git
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (LTS), e.g. `winget install Microsoft.DotNet.SDK.10`
 - [Node.js](https://nodejs.org/) `^22.18.0` or `>=24.12.0` (the project was set up with Node 26 LTS) and npm
-- Python 3 with Jupyter, pandas, numpy, scipy and matplotlib (analysis notebooks only)
+- Python 3.12+ (analysis notebooks only) — pinned dependencies in `docs/analysis/notebooks/requirements.txt`, setup steps in [`docs/analysis/notebooks/README.md`](docs/analysis/notebooks/README.md)
 - Editor: any. Recommended: VS Code with the extensions from `.vscode/extensions.json` (C# Dev Kit, Vue - Official, ESLint, Prettier). Visual Studio 2022 does not support .NET 10 — use Visual Studio 2026 or JetBrains Rider instead.
 
 ### Steps

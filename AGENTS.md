@@ -17,6 +17,7 @@ Documentation in `docs/` is written in Polish; code, comments, commit messages a
 - `src/frontend` — Vue 3 + TypeScript + Vite
 - `tests/backend/CryptoMarketAnalytics.Api.Tests` — xUnit, integration tests via `WebApplicationFactory`
 - `CryptoMarketAnalytics.slnx` — .NET solution
+- `docs/analysis/notebooks` — Jupyter notebooks (Python 3.12+) for analysis and reference calculations; dependencies pinned in `requirements.txt`, setup in its `README.md`
 
 ## Commands
 
@@ -49,6 +50,7 @@ npm run build
 ## Rules
 
 - Statistical calculations must follow the variant defined in `docs/analysis/metody-statystyczne.md` (e.g. n−1 divisor, √365 annualisation, log vs simple returns). Use its test data (chapter 11) in unit tests.
+- Notebooks: keep dependency versions pinned in `docs/analysis/notebooks/requirements.txt`; do not commit downloaded market data; run a notebook top to bottom before committing it.
 - Never add API keys or other secrets to the repository. The Binance market data API needs no key.
 - Keep changes small and focused; one branch = one logical change = one pull request.
 - Branch names: `<type>/<short-description>` in English kebab-case, e.g. `feat/binance-klines-client`.
