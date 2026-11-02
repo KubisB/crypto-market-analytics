@@ -1,0 +1,5 @@
+@CryptoMarketAnalytics.Api_HostAddress = http://localhost:5299
+
+GET {{CryptoMarketAnalytics.Api_HostAddress}}/api/health
+
+###

@@ -2,7 +2,7 @@
 
 A web application that fetches daily BNB/USDT market data from the public Binance API, runs statistical analysis on it and presents the results as charts and summaries, using bitcoin (BTC/USDT) as the market benchmark. Built as part of the **Group Practical Project** (*Grupowy projekt praktyczny*) course.
 
-> **Status:** early stage — requirements and analysis methods are documented; the application code has not been started yet.
+> **Status:** early stage — requirements and analysis methods are documented; the application skeleton (backend, frontend, tests) is in place, features are not implemented yet.
 > Items marked **[TBD]** have not been decided by the team yet. Items marked _(planned)_ do not exist in the repository yet.
 
 ---
@@ -19,6 +19,7 @@ A web application that fetches daily BNB/USDT market data from the public Binanc
 8. [Configuration](#8-configuration)
 9. [Documentation](#9-documentation)
 10. [AI usage policy](#10-ai-usage-policy)
+11. [Contributing](#11-contributing)
 
 ---
 
@@ -58,11 +59,12 @@ The project is carried out at the request of the course supervisor and is the ba
 
 | Layer | Technology | Status |
 |---|---|---|
-| Backend | C# / .NET (version: [TBD]) | **[TBD]** |
-| Frontend | Vue.js | Decided |
+| Backend | C# / ASP.NET Core Web API (controllers, OpenAPI) on .NET 10 LTS (`net10.0`) | Decided |
+| Frontend | Vue 3 + TypeScript, Vite; ESLint, Oxlint and Prettier | Decided |
 | Data source | Binance public REST API (`https://data-api.binance.vision`, `GET /api/v3/klines`), daily candles, no API key | Decided |
 | Data storage | Local storage of downloaded candles; form (e.g. SQLite or files) _[TBD]_ | **[TBD]** |
-| Backend tests | _[e.g. xUnit]_ | **[TBD]** |
+| Backend tests | xUnit, integration tests with `WebApplicationFactory` | Decided |
+| Frontend unit tests | Vitest, Vue Test Utils | Decided |
 | E2E tests | _[TBD]_ | **[TBD]** |
 | Data analysis and verification | Python, Jupyter notebooks (pandas, numpy, scipy, matplotlib) | Decided |
 | Version control | Git | |
@@ -77,28 +79,37 @@ Details and technical decisions will be kept in `docs/architecture/` _(planned)_
 
 ## 6. Repository structure
 
-Target structure. Entries marked _(planned)_ will be added together with the application skeleton.
+Entries marked _(planned)_ do not exist yet.
 
 ```
 crypto-market-analytics/
-├── docs/                          # project and analysis documentation
-│   ├── analysis/                  # statistical methods, pair selection, results
-│   │   └── notebooks/             # Jupyter notebooks for analysis and verification (planned)
-│   ├── architecture/              # architecture, diagrams, technical decisions (planned)
-│   └── requirements/              # requirements, scope, user stories
-├── src/                           # (planned)
-│   ├── backend/                   # backend application (C# / .NET)
-│   └── frontend/                  # frontend application (Vue.js)
-├── tests/                         # (planned)
-│   ├── backend/                   # unit and integration tests
-│   └── e2e/                       # end-to-end tests
-├── .editorconfig                  # shared code formatting rules (planned)
-├── .gitignore
-├── AGENTS.md                      # guidelines for AI assistants working on the repository (planned)
-├── CLAUDE.md                      # points Claude Code to AGENTS.md (planned)
-├── CryptoMarketAnalytics.sln      # .NET solution (planned)
+├── .vscode/
+│   ├── extensions.json                    # recommended VS Code extensions
+│   └── settings.json                      # shared VS Code settings (format on save, ESLint for src/frontend)
+├── docs/                                  # project and analysis documentation (Polish)
+│   ├── analysis/                          # statistical methods, pair selection, results
+│   │   └── notebooks/                     # Jupyter notebooks for analysis and verification (planned)
+│   ├── architecture/                      # architecture, diagrams, technical decisions (planned)
+│   └── requirements/                      # requirements, scope, user stories
+├── src/
+│   ├── backend/
+│   │   └── CryptoMarketAnalytics.Api/     # ASP.NET Core Web API (.NET 10)
+│   └── frontend/                          # Vue 3 + TypeScript + Vite application
+├── tests/
+│   ├── backend/
+│   │   └── CryptoMarketAnalytics.Api.Tests/  # xUnit unit and integration tests
+│   └── e2e/                               # end-to-end tests (planned)
+├── .editorconfig                          # shared code formatting rules (C# and frontend)
+├── .gitattributes                         # LF line endings on every OS
+├── .gitignore                             # single ignore file for the whole repository
+├── AGENTS.md                              # guidelines for AI assistants working on the repository
+├── CLAUDE.md                              # points Claude Code to AGENTS.md
+├── CryptoMarketAnalytics.slnx             # .NET solution (new XML solution format)
+├── global.json                            # pins .NET SDK 10 (newer 10.x feature bands allowed)
 └── README.md
 ```
+
+Frontend unit tests live next to the code, in `src/frontend/src/**/__tests__/`.
 
 
 ## 7. Getting started
@@ -106,32 +117,67 @@ crypto-market-analytics/
 ### Prerequisites
 
 - Git
-- .NET SDK _[version]_
-- Node.js _[version]_ and npm (frontend)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (LTS), e.g. `winget install Microsoft.DotNet.SDK.10`
+- [Node.js](https://nodejs.org/) `^22.18.0` or `>=24.12.0` (the project was set up with Node 26 LTS) and npm
 - Python 3 with Jupyter, pandas, numpy, scipy and matplotlib (analysis notebooks only)
+- Editor: any. Recommended: VS Code with the extensions from `.vscode/extensions.json` (C# Dev Kit, Vue - Official, ESLint, Prettier). Visual Studio 2022 does not support .NET 10 — use Visual Studio 2026 or JetBrains Rider instead.
 
 ### Steps
 
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
+git clone https://github.com/KubisB/crypto-market-analytics.git
 cd crypto-market-analytics
 
-# 2. Backend
-dotnet restore
+# 2. Backend: build, test and run (http://localhost:5299)
 dotnet build
-dotnet run --project src/backend/<project-name>
+dotnet test
+dotnet run --project src/backend/CryptoMarketAnalytics.Api
 
-# 3. Frontend
+# 3. Frontend (in a second terminal): install and run the dev server (http://localhost:5173)
 cd src/frontend
 npm install
 npm run dev
-
-# 4. Backend tests
-dotnet test
 ```
 
-_[Commands to be verified and completed once the first code is in place.]_
+Check that the backend is running: `GET http://localhost:5299/api/health` returns `Healthy`. In development the Vite dev server forwards every `/api/*` request to the backend, so the frontend calls the API with relative URLs (e.g. `fetch('/api/health')`). The OpenAPI document is available at `http://localhost:5299/openapi/v1.json` in the Development environment.
+
+### Useful commands
+
+| Where | Command | What it does |
+|---|---|---|
+| root | `dotnet build` | build the solution |
+| root | `dotnet test` | run backend tests |
+| `src/frontend` | `npm run dev` | dev server with hot reload |
+| `src/frontend` | `npm run test:unit` | run Vitest in watch mode (`npx vitest run` for a single run) |
+| `src/frontend` | `npm run lint` | Oxlint and ESLint with auto-fix |
+| `src/frontend` | `npm run format` | format `src/` with Prettier |
+| `src/frontend` | `npm run build` | type-check and production build to `dist/` |
+
+### How the skeleton was created
+
+For reference, the project was generated with these commands (.NET SDK 10.0.403, create-vue 3.24.0):
+
+```bash
+dotnet new sln -n CryptoMarketAnalytics
+dotnet new webapi -n CryptoMarketAnalytics.Api -o src/backend/CryptoMarketAnalytics.Api --use-controllers -f net10.0
+dotnet new xunit -n CryptoMarketAnalytics.Api.Tests -o tests/backend/CryptoMarketAnalytics.Api.Tests -f net10.0
+dotnet sln CryptoMarketAnalytics.slnx add src/backend/CryptoMarketAnalytics.Api/CryptoMarketAnalytics.Api.csproj --solution-folder src
+dotnet sln CryptoMarketAnalytics.slnx add tests/backend/CryptoMarketAnalytics.Api.Tests/CryptoMarketAnalytics.Api.Tests.csproj --solution-folder tests
+dotnet add tests/backend/CryptoMarketAnalytics.Api.Tests reference src/backend/CryptoMarketAnalytics.Api
+dotnet add tests/backend/CryptoMarketAnalytics.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
+dotnet new gitignore
+dotnet new editorconfig
+
+cd src
+npm create vue@latest -- --ts --vitest --eslint --prettier --bare frontend
+```
+
+Afterwards:
+- the template samples (`WeatherForecast`, `UnitTest1`) were replaced with a `/api/health` endpoint and its integration test,
+- a dev proxy for `/api` was added to `vite.config.ts`,
+- the frontend's own `.gitignore`, `.gitattributes`, `.editorconfig` and `.vscode/` were merged into the root files, and the generated `.gitignore` was trimmed to the tools the project actually uses,
+- `.gitattributes` (LF everywhere) and `global.json` (.NET SDK 10) were added.
 
 
 ## 8. Configuration
@@ -158,8 +204,8 @@ Project documentation lives in `docs/` and is written in Polish.
 ## 10. AI usage policy
 
 The team uses AI assistants (e.g. Claude, Copilot) as part of the development
-and documentation process. Shared instructions for AI tools will live in
-`AGENTS.md` _(planned)_.
+and documentation process. Shared instructions for AI tools live in
+[`AGENTS.md`](AGENTS.md).
 
 Ground rules:
 - AI output is a draft. The author of a change is responsible for reviewing,
@@ -168,6 +214,17 @@ Ground rules:
   source data before they go into the documentation.
 - No secrets (API keys, `.env` contents) are ever pasted into AI tools.
 - Code review applies equally to AI-assisted and hand-written changes.
+
+
+## 11. Contributing
+
+- Every change goes through a pull request; nobody pushes directly to `main`.
+- One branch = one logical change = one pull request. Keep pull requests small.
+- **Branch names:** `<type>/<short-description>`, in English, lowercase, words separated by hyphens, describing *what* changes (not *where*). Examples: `feat/binance-klines-client`, `fix/drawdown-start-date`, `docs/event-study-method`.
+- **Commit messages:** [Conventional Commits](https://www.conventionalcommits.org/), imperative mood, e.g. `feat: add Binance klines client`, `fix: exclude unclosed candle`.
+- **Types** (for both branches and commits): `feat` (new functionality), `fix` (bug fix), `docs` (documentation), `test` (tests only), `refactor` (no behaviour change), `chore` (setup, dependencies, configuration), `ci` (pipelines).
+- Before opening a pull request: `dotnet build`, `dotnet test`, and in `src/frontend` `npm run lint`, `npx vitest run` and `npm run build` must pass.
+- Code, comments, commit messages and this README are in English; documentation in `docs/` is in Polish.
 
 ---
 
