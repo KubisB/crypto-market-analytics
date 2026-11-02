@@ -12,7 +12,7 @@ Wymagania są oznaczone jako konieczne albo dodatkowe, czyli realizowane w miar�
 
 Aplikacja webowa pobiera z Binance historyczne notowania pary BNB/USDT, liczy na nich statystyki i pokazuje wyniki na wykresach.
 
-BNB to token giełdy Binance. Jego cena zależy od całego rynku kryptowalut i od sytuacji samej giełdy, co pozwala sprawdzić, na ile BNB podąża za rynkiem, a na ile zachowuje się niezależnie. Punktem odniesienia rynku jest bitcoin, czyli para BTC/USDT. Jest konieczna do wyliczenia korelacji i bety.
+BNB to token powiązany z giełdą Binance i natywny token sieci BNB Chain. Jego cena zależy od całego rynku kryptowalut i od sytuacji samej giełdy, co pozwala sprawdzić, na ile BNB podąża za rynkiem, a na ile zachowuje się niezależnie. Punktem odniesienia rynku jest bitcoin, czyli para BTC/USDT. Jest konieczna do wyliczenia korelacji i bety.
 
 ## 3. Zakres
 
@@ -61,6 +61,7 @@ Jako użytkownik chcę zobaczyć, jak zmieniała się cena BNB w wybranym okresi
 
 Jako użytkownik chcę wybrać zakres dat analizy.
 - pola daty od i do oraz skróty: 30 dni, 90 dni, 365 dni i całość od 2023, liczone wstecz od wczoraj,
+- skrót N dni obejmuje N zwrotów, czyli N+1 cen, więc pierwsza cena jest z dnia o N dni wcześniejszego niż wczoraj, a skrót 365 dni daje pełny rok, dla którego liczony jest CAGR,
 - nie można wybrać daty wcześniejszej niż 1.01.2023 ani dzisiejszej, bo dzisiejsza świeca nie jest zamknięta,
 - przy błędnym zakresie wyświetla się czytelny komunikat,
 - zmiana okresu przelicza wszystkie wykresy i statystyki.
@@ -74,7 +75,7 @@ Jako użytkownik chcę zobaczyć najważniejsze statystyki w jednym miejscu.
 
 ### 6.4. Zmienność w czasie, konieczne
 
-Wykres zmienności 30-dniowej. Dni bez pełnego okna nie mają wartości i nie są rysowane jako zero.
+Wykres zmienności 30-dniowej w skali rocznej, porównywalnej ze zmiennością roczną z tabeli statystyk. Dni bez pełnego okna nie mają wartości i nie są rysowane jako zero.
 
 ### 6.5. Obsunięcia, konieczne
 
@@ -82,7 +83,7 @@ Wykres spadku ceny od szczytu z zaznaczonym maksymalnym obsunięciem: wielkości
 
 ### 6.6. Rozkład zwrotów, dodatkowe
 
-Histogram dziennych zwrotów. Wysokość słupka to liczba dni, w których zmiana ceny mieściła się w danym przedziale. Prawa strona od zera to dni wzrostowe, lewa spadkowe. Pod wykresem jest krótkie objaśnienie, jak go czytać.
+Histogram dziennych zwrotów logarytmicznych. Wysokość słupka to liczba dni, w których zwrot mieścił się w danym przedziale. Prawa strona od zera to dni wzrostowe, lewa spadkowe. Oś jest opisana jako zwrot logarytmiczny, bo przy dużych ruchach różni się on od zmiany procentowej, np. spadek o 10% to zwrot logarytmiczny −10,5%. Na histogram nałożona jest krzywa rozkładu normalnego o tej samej średniej i odchyleniu, co pokazuje grube ogony. Pod wykresem jest krótkie objaśnienie, jak go czytać.
 
 ### 6.7. BNB na tle BTC, konieczne
 
@@ -92,17 +93,17 @@ Histogram dziennych zwrotów. Wysokość słupka to liczba dni, w których zmian
 
 ### 6.8. Wydarzenia wokół Binance, dodatkowe
 
-Ważne wydarzenia zaznaczone na wykresie ceny oraz tabela z reakcją BNB na tle rynku. Lista wydarzeń i metoda są w dokumencie o metodach.
+Ważne wydarzenia zaznaczone na wykresie ceny oraz tabela z reakcją BNB na tle rynku. Lista wydarzeń i metoda są w dokumencie o metodach. Wyniki analizy wydarzeń nie zależą od okresu wybranego przez użytkownika, bo każde wydarzenie ma własne okna.
 
 ### 6.9. Wolumen, dodatkowe
 
-Wykres wolumenu pod wykresem ceny oraz zależność między wielkością ruchów ceny a obrotem.
+Wykres wolumenu pod wykresem ceny oraz zależność między wielkością ruchów ceny a obrotem względnym, czyli obrotem danego dnia na tle średniej z ostatnich 30 dni.
 
 ### 6.10. Informacja o BNB, konieczne
 
 Jako użytkownik chcę przeczytać, czym jest BNB, nawet jeśli nie znam rynku kryptowalut.
 - opis jest na górze strony, domyślnie zwinięty, rozwija się po kliknięciu,
-- wyjaśnia, że BNB to token giełdy Binance, do czego służy, że jego liczba maleje przez spalanie i że cena zależy od rynku oraz od sytuacji giełdy,
+- wyjaśnia, że BNB to token powiązany z giełdą Binance i natywny token sieci BNB Chain, do czego służy, że jego liczba maleje przez spalanie i że cena zależy od rynku oraz od sytuacji giełdy,
 - wyjaśnia zapis BNB/USDT i rolę bitcoina jako punktu odniesienia.
 
 ### 6.11. Źródło danych, konieczne
@@ -114,8 +115,8 @@ Na stronie widać źródło danych, np. „Binance, BNB/USDT, świece dzienne UT
 Szczegóły źródła są w rozdziale 10, a wzory w dokumencie o metodach.
 - dane to dzienne świece `BNBUSDT` i `BTCUSDT` z publicznego API Binance, tylko zamknięte, do wczoraj włącznie,
 - dane są aktualizowane raz dziennie po północy UTC, a gdy API jest niedostępne, wyświetlane są ostatnie zapisane dane z datą aktualizacji,
-- walidacja: brak duplikatów dat, rosnąca kolejność, cena najniższa nie większa od otwarcia i zamknięcia, najwyższa nie mniejsza, ceny dodatnie, a błędne rekordy są odrzucane,
-- brakujące dni nie są uzupełniane, a dzienne zmiany ceny powyżej 50% są oznaczane do ręcznej weryfikacji, ale nie usuwane,
+- walidacja: brak duplikatów dat, rosnąca kolejność, cena najniższa nie większa od otwarcia i zamknięcia, najwyższa nie mniejsza, ceny dodatnie, wolumen nieujemny, a błędne rekordy są odrzucane,
+- brakujące dni nie są uzupełniane, a zwrot obejmujący lukę nie wchodzi do statystyk dziennych, zgodnie z dokumentem o metodach. Dzienne zmiany ceny powyżej 50% są oznaczane do ręcznej weryfikacji, ale nie usuwane,
 - BNB z BTC są porównywane tylko po wspólnych datach,
 - gdy danych jest za mało na daną statystykę, wyświetlana jest pusta wartość z przyczyną, a nie błąd.
 
@@ -211,17 +212,17 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 
 - wykres ceny: 1 dzień,
 - statystyki opisowe: 2 zwroty,
-- CAGR: okres co najmniej 365 dni,
+- CAGR: okres co najmniej 365 dni kalendarzowych między pierwszą a ostatnią ceną, czyli 366 cen,
 - zmienność okresu: 2 zwroty, wiarygodnie od 30,
 - zmienność krocząca: 31 cen, czyli 30 zwrotów,
 - SMA i EMA: tyle cen, ile wynosi okno, czyli 20, 50 lub 200,
 - obsunięcie: 2 ceny,
-- skośność: 3 zwroty, kurtoza: 4 zwroty, obie wiarygodnie od 30,
+- skośność: 3 zwroty, kurtoza: 4 zwroty, obie wiarygodnie od 365, bo przy grubych ogonach jeden skrajny dzień potrafi zmienić wynik,
 - histogram: 2 zwroty, wiarygodnie od 30,
 - korelacja i beta z BTC: 2 wspólne zwroty, wiarygodnie od 30,
 - korelacja krocząca: 90 wspólnych zwrotów,
-- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla opcjonalnego okna od −5 do +5 dni 5 dni po nim,
-- wolumen: wiarygodnie od 30.
+- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla opcjonalnego okna od −5 do +5 dni 5 dni po nim, niezależnie od wybranego okresu,
+- wolumen: 31 dni, bo obrót względny wymaga średniej z 30 dni, wiarygodnie od 90.
 
 Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało danych, wymagane 365 dni”. Między minimum a poziomem wiarygodnym wynik jest liczony z ostrzeżeniem.
 
@@ -229,21 +230,21 @@ Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało dan
 
 Wskaźnik kroczący liczony jest osobno dla każdego dnia z ostatnich N dni, łącznie z tym dniem. Dni bez pełnego okna mają pustą wartość, a nie zero, bo zero oznaczałoby dzień bez ruchu ceny.
 
-Żeby wartości były od pierwszego dnia okresu, pobieranych jest dodatkowo 200 dni wcześniejszych, co wystarcza dla SMA200. Służą one tylko do rozgrzania wskaźników, nie są pokazywane na wykresach i nie wchodzą do pozostałych statystyk.
+Żeby wartości były od pierwszego dnia okresu, pobieranych jest dodatkowo 200 dni wcześniejszych, co wystarcza dla SMA200. Służą one tylko do rozgrzania wskaźników i do okien estymacji w analizie wydarzeń, nie są pokazywane na wykresach i nie wchodzą do pozostałych statystyk.
 
 ### 11.5. Opisy wskaźników w interfejsie
 
 Propozycje krótkich wyjaśnień:
-- średni zwrot: o ile procent średnio zmieniała się cena z dnia na dzień,
+- średni zwrot: o ile procent średnio zmieniała się cena z dnia na dzień; przy dużych wahaniach może być dodatni, mimo że cena w całym okresie spadła, dlatego wynik okresu pokazuje zwrot za cały okres,
 - mediana: zwrot typowego dnia, połowa dni miała wynik niższy, a połowa wyższy,
 - zmienność roczna: siła wahań ceny w skali roku, wyższa oznacza bardziej nerwowy rynek,
 - zmienność 30-dniowa: pokazuje okresy spokoju i paniki,
 - maksymalne obsunięcie: największy spadek ceny od szczytu w okresie,
 - CAGR: średni roczny zwrot przy stałym tempie zmian,
-- skośność: wartość ujemna oznacza przewagę dużych spadków nad dużymi wzrostami,
+- skośność: wartość ujemna oznacza, że skrajne spadki były większe niż skrajne wzrosty, czyli dłuższy lewy ogon rozkładu,
 - kurtoza: wartość powyżej 0 oznacza, że dni skrajne zdarzały się częściej niż w rozkładzie normalnym, w którym wartości skrajne są bardzo rzadkie,
 - korelacja z BTC: 1 oznacza pełną zgodność ruchów, 0 brak związku liniowego,
-- beta: średnia procentowa zmiana BNB przy zmianie BTC o 1%,
+- beta: o ile procent średnio zmieniał się BNB, gdy BTC zmieniał się o 1%; przy słabej korelacji to tylko przeciętna, a nie reguła dla pojedynczych dni,
 - SMA 200: średnia cena z ostatnich 200 dni, pokazuje długoterminowy trend,
 - zwrot nadzwyczajny: część zmiany ceny BNB, której nie wyjaśnia ruch całego rynku.
 

@@ -11,7 +11,7 @@ Cena aktywa na giełdzie jest zawsze wyrażona w innym aktywie. Para BNB/USDT, w
 - BNB/USDT: główny przedmiot analizy,
 - BTC/USDT: punkt odniesienia dla rynku.
 
-BNB to token Binance. Jego cena zależy od całego rynku i od sytuacji giełdy, co pozwala określić, jaka część ruchu ceny wynika z rynku, a jaka z wydarzeń wokół Binance. BTC to największa kryptowaluta, względem niej liczone są korelacja i beta BNB. Obie pary są notowane od 2017 roku.
+BNB to token powiązany z giełdą Binance i natywny token sieci BNB Chain. Jego cena zależy od całego rynku i od sytuacji giełdy, co pozwala określić, jaka część ruchu ceny wynika z rynku, a jaka z wydarzeń wokół Binance. BTC to największa kryptowaluta, względem niej liczone są korelacja i beta BNB. Obie pary są notowane od 2017 roku.
 
 ## 3. Uwagi
 
