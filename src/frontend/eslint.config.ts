@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'
@@ -21,12 +22,15 @@ export default defineConfigWithVueTs(
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
 
+  // Unit tests live in tests/frontend at the repository root; the lint script runs ESLint from there.
   {
     ...pluginVitest.configs.recommended,
-    files: ['src/**/__tests__/*'],
+    files: ['tests/frontend/**/*'],
   },
 
-  ...pluginOxlint.buildFromOxlintConfigFile('.oxlintrc.json'),
+  ...pluginOxlint.buildFromOxlintConfigFile(
+    fileURLToPath(new URL('./.oxlintrc.json', import.meta.url)),
+  ),
 
   skipFormatting,
 )

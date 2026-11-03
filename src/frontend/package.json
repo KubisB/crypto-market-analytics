@@ -11,9 +11,9 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "run-s \"lint:*\"",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/"
+    "lint:oxlint": "cd ../.. && oxlint -c src/frontend/.oxlintrc.json --fix src/frontend tests/frontend",
+    "lint:eslint": "cd ../.. && eslint -c src/frontend/eslint.config.ts --fix --cache --cache-location src/frontend/.eslintcache src/frontend tests/frontend",
+    "format": "cd ../.. && prettier --write --experimental-cli src/frontend/src tests/frontend"
   },
   "dependencies": {
     "vue": "^3.5.42"

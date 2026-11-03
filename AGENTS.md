@@ -16,6 +16,7 @@ Documentation in `docs/` is written in Polish; code, comments, commit messages a
 - `src/backend/CryptoMarketAnalytics.Api` — ASP.NET Core Web API, .NET 10 (`net10.0`), controllers
 - `src/frontend` — Vue 3 + TypeScript + Vite
 - `tests/backend/CryptoMarketAnalytics.Api.Tests` — xUnit, integration tests via `WebApplicationFactory`
+- `tests/frontend` — Vitest unit tests for the frontend; TypeScript settings in `tests/frontend/tsconfig.json`, other tooling configured in `src/frontend` (`vitest.config.ts`, `eslint.config.ts`), run via its npm scripts
 - `CryptoMarketAnalytics.slnx` — .NET solution
 - `docs/analysis/notebooks` — Jupyter notebooks (Python 3.12+) for analysis and reference calculations; dependencies pinned in `requirements.txt`, setup in its `README.md`
 
@@ -56,5 +57,6 @@ npm run build
 - Branch names: `<type>/<short-description>` in English kebab-case, e.g. `feat/binance-klines-client`.
 - Commit messages: Conventional Commits, imperative mood, e.g. `feat: add Binance klines client`.
   Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`.
+- All tests go in `tests/`, never next to the application code in `src/`.
 - Build, tests and lint must pass before opening a pull request.
 - AI output is a draft: the author of a change reviews, understands and tests it.

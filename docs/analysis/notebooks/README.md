@@ -1,17 +1,19 @@
-# Notebooki analizy
+# Notebooki analityczne
 
-Notebooki Jupyter do analizy BNB/USDT i do kontrolnego przeliczania wyników aplikacji. Wzory i obowiązujące warianty obliczeń są w [`../metody-statystyczne.md`](../metody-statystyczne.md), a dane testowe w jego rozdziale 11.
+## 1. Przeznaczenie
 
-## Wymagania
+Katalog zawiera notebooki Jupyter służące do analizy notowań pary BNB/USDT oraz do kontrolnego przeliczania wyników uzyskiwanych w aplikacji. Wzory i obowiązujące warianty obliczeń określa dokument [`metody-statystyczne.md`](../metody-statystyczne.md), a dane testowe zawiera jego rozdział 11.
 
-- Python 3.12 lub nowszy,
-- biblioteki z [`requirements.txt`](requirements.txt), w dokładnie tych wersjach, żeby wszyscy dostawali te same wyniki liczbowe.
+## 2. Wymagania
 
-## Przygotowanie środowiska
+- Python w wersji 3.12 lub nowszej.
+- Biblioteki wymienione w pliku [`requirements.txt`](requirements.txt). Wersje bibliotek są ustalone dokładnie, co zapewnia identyczne wyniki liczbowe u wszystkich członków zespołu.
 
-Jednorazowo, z katalogu głównego repozytorium. Środowisko `.venv/` jest ignorowane przez git.
+## 3. Przygotowanie środowiska
 
-Windows (PowerShell):
+Środowisko wirtualne tworzy się jednorazowo w katalogu głównym repozytorium. Katalog `.venv/` jest wyłączony z repozytorium w pliku `.gitignore`.
+
+System Windows (PowerShell):
 
 ```powershell
 python -m venv .venv
@@ -19,7 +21,7 @@ python -m venv .venv
 python -m pip install -r docs/analysis/notebooks/requirements.txt
 ```
 
-macOS i Linux:
+Systemy macOS i Linux:
 
 ```bash
 python3 -m venv .venv
@@ -27,20 +29,20 @@ source .venv/bin/activate
 python -m pip install -r docs/analysis/notebooks/requirements.txt
 ```
 
-## Uruchomienie
+## 4. Uruchamianie
 
-Po aktywowaniu środowiska:
+Po aktywacji środowiska wirtualnego JupyterLab uruchamia się poleceniem:
 
 ```bash
 jupyter lab docs/analysis/notebooks
 ```
 
-W VS Code wystarczy otworzyć plik `.ipynb` i wybrać jako kernel interpreter z `.venv`.
+Notebooki można również otwierać w VS Code. Jako kernel należy wówczas wskazać interpreter ze środowiska `.venv`.
 
-## Zasady
+## 5. Zasady pracy
 
-- Nazwy plików: numer i krótki opis po angielsku, małymi literami z myślnikami, np. `01-data-download.ipynb`, `02-descriptive-stats.ipynb`.
-- Dane pobierane są z publicznego API Binance i nie są commitowane. W notebooku zapisywana jest data ostatniego dnia danych.
-- Przed commitem uruchom notebook od początku do końca (Restart Kernel and Run All), żeby wyniki odpowiadały kodowi.
-- Wyniki trafiające do dokumentacji sprawdza człowiek na danych źródłowych.
-- Zmiana wersji bibliotek w `requirements.txt` to osobny PR, bo może zmienić wyniki liczbowe.
+- Nazwa pliku składa się z numeru porządkowego i krótkiego opisu w języku angielskim, zapisanego małymi literami z myślnikami, np. `01-data-download.ipynb` lub `02-descriptive-stats.ipynb`.
+- Dane rynkowe są pobierane z publicznego API Binance i nie są umieszczane w repozytorium. Każdy notebook podaje datę ostatniego dnia danych, na których został wykonany.
+- Przed zatwierdzeniem zmian notebook należy wykonać w całości od początku (Restart Kernel and Run All), tak aby zapisane wyniki odpowiadały aktualnemu kodowi.
+- Wyniki przeznaczone do dokumentacji są weryfikowane przez członka zespołu na danych źródłowych.
+- Zmiana wersji bibliotek w pliku `requirements.txt` wymaga osobnego pull requestu, ponieważ może wpłynąć na wyniki liczbowe.
