@@ -9,7 +9,11 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
   },
-  "eslint.workingDirectories": ["./src/frontend"],
+  // ESLint and Oxlint run from the repository root (like the npm lint script) so that tests/frontend is covered too.
+  "eslint.workingDirectories": ["."],
+  "eslint.nodePath": "src/frontend/node_modules",
+  "eslint.options": { "overrideConfigFile": "src/frontend/eslint.config.ts" },
+  "oxc.configPath": "src/frontend/.oxlintrc.json",
   "[vue]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
   "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },

@@ -98,10 +98,12 @@ crypto-market-analytics/
 ├── tests/
 │   ├── backend/
 │   │   └── CryptoMarketAnalytics.Api.Tests/  # xUnit unit and integration tests
+│   ├── frontend/                          # Vitest unit tests for the Vue application
 │   └── e2e/                               # end-to-end tests (planned)
 ├── .editorconfig                          # shared code formatting rules (C# and frontend)
 ├── .gitattributes                         # LF line endings on every OS
 ├── .gitignore                             # single ignore file for the whole repository
+├── .prettierrc.json                       # Prettier settings for src/frontend and tests/frontend
 ├── AGENTS.md                              # guidelines for AI assistants working on the repository
 ├── CLAUDE.md                              # points Claude Code to AGENTS.md
 ├── CryptoMarketAnalytics.slnx             # .NET solution (new XML solution format)
@@ -109,7 +111,7 @@ crypto-market-analytics/
 └── README.md
 ```
 
-Frontend unit tests live next to the code, in `src/frontend/src/**/__tests__/`.
+All tests live in `tests/`, separate from the application code. The frontend tooling (Vitest, ESLint, Oxlint, Prettier) is configured in `src/frontend` and also covers `tests/frontend`; run it through the npm scripts in `src/frontend`.
 
 
 ## 7. Getting started
@@ -120,7 +122,6 @@ Frontend unit tests live next to the code, in `src/frontend/src/**/__tests__/`.
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (LTS), e.g. `winget install Microsoft.DotNet.SDK.10`
 - [Node.js](https://nodejs.org/) `^22.18.0` or `>=24.12.0` (the project was set up with Node 26 LTS) and npm
 - Python 3.12+ (analysis notebooks only) — pinned dependencies in `docs/analysis/notebooks/requirements.txt`, setup steps in [`docs/analysis/notebooks/README.md`](docs/analysis/notebooks/README.md)
-- Editor: any. Recommended: VS Code with the extensions from `.vscode/extensions.json` (C# Dev Kit, Vue - Official, ESLint, Prettier). Visual Studio 2022 does not support .NET 10 — use Visual Studio 2026 or JetBrains Rider instead.
 
 ### Steps
 
@@ -149,35 +150,10 @@ Check that the backend is running: `GET http://localhost:5299/api/health` return
 | root | `dotnet build` | build the solution |
 | root | `dotnet test` | run backend tests |
 | `src/frontend` | `npm run dev` | dev server with hot reload |
-| `src/frontend` | `npm run test:unit` | run Vitest in watch mode (`npx vitest run` for a single run) |
-| `src/frontend` | `npm run lint` | Oxlint and ESLint with auto-fix |
-| `src/frontend` | `npm run format` | format `src/` with Prettier |
+| `src/frontend` | `npm run test:unit` | run the tests from `tests/frontend` in watch mode (`npx vitest run` for a single run) |
+| `src/frontend` | `npm run lint` | Oxlint and ESLint with auto-fix (`src/frontend` and `tests/frontend`) |
+| `src/frontend` | `npm run format` | format the frontend code and `tests/frontend` with Prettier |
 | `src/frontend` | `npm run build` | type-check and production build to `dist/` |
-
-### How the skeleton was created
-
-For reference, the project was generated with these commands (.NET SDK 10.0.403, create-vue 3.24.0):
-
-```bash
-dotnet new sln -n CryptoMarketAnalytics
-dotnet new webapi -n CryptoMarketAnalytics.Api -o src/backend/CryptoMarketAnalytics.Api --use-controllers -f net10.0
-dotnet new xunit -n CryptoMarketAnalytics.Api.Tests -o tests/backend/CryptoMarketAnalytics.Api.Tests -f net10.0
-dotnet sln CryptoMarketAnalytics.slnx add src/backend/CryptoMarketAnalytics.Api/CryptoMarketAnalytics.Api.csproj --solution-folder src
-dotnet sln CryptoMarketAnalytics.slnx add tests/backend/CryptoMarketAnalytics.Api.Tests/CryptoMarketAnalytics.Api.Tests.csproj --solution-folder tests
-dotnet add tests/backend/CryptoMarketAnalytics.Api.Tests reference src/backend/CryptoMarketAnalytics.Api
-dotnet add tests/backend/CryptoMarketAnalytics.Api.Tests package Microsoft.AspNetCore.Mvc.Testing
-dotnet new gitignore
-dotnet new editorconfig
-
-cd src
-npm create vue@latest -- --ts --vitest --eslint --prettier --bare frontend
-```
-
-Afterwards:
-- the template samples (`WeatherForecast`, `UnitTest1`) were replaced with a `/api/health` endpoint and its integration test,
-- a dev proxy for `/api` was added to `vite.config.ts`,
-- the frontend's own `.gitignore`, `.gitattributes`, `.editorconfig` and `.vscode/` were merged into the root files, and the generated `.gitignore` was trimmed to the tools the project actually uses,
-- `.gitattributes` (LF everywhere) and `global.json` (.NET SDK 10) were added.
 
 
 ## 8. Configuration
