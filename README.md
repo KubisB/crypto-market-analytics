@@ -143,6 +143,15 @@ npm run dev
 
 Check that the backend is running: `GET http://localhost:5299/api/health` returns `Healthy`. In development the Vite dev server forwards every `/api/*` request to the backend, so the frontend calls the API with relative URLs (e.g. `fetch('/api/health')`). The OpenAPI document is available at `http://localhost:5299/openapi/v1.json` in the Development environment.
 
+### API endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/health` | health check, returns `Healthy` |
+| `GET /api/market/klines?symbol=BNBUSDT&from=2026-10-01&to=2026-10-31` | closed daily candles fetched directly from Binance for the given UTC days (inclusive); `symbol` is `BNBUSDT` or `BTCUSDT`, `from` not earlier than 2017-01-01 |
+
+Example requests are in `src/backend/CryptoMarketAnalytics.Api/CryptoMarketAnalytics.Api.http` (VS Code REST Client, Visual Studio, Rider).
+
 ### Useful commands
 
 | Where | Command | What it does |
@@ -159,6 +168,7 @@ Check that the backend is running: `GET http://localhost:5299/api/health` return
 ## 8. Configuration
 
 - Application settings: `appsettings.json` and `appsettings.Development.json`.
+- Binance API settings are in the `Binance` section of `appsettings.json`: `BaseUrl` (default `https://data-api.binance.vision`), `FallbackBaseUrl` used when the primary server fails (default `https://api.binance.com`) and `Timeout`.
 - The Binance market data API is public, so **no API key is needed** to run the application at the start.
 - If secrets are added later, they are **never committed to the repository**.
   The required values will be listed in `.env.example` _(planned)_; copy it to `.env` and fill in your own values.
