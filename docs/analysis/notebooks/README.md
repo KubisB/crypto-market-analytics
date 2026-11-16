@@ -2,16 +2,24 @@
 
 ## 1. Przeznaczenie
 
-Katalog zawiera notebooki Jupyter służące do analizy notowań pary BNB/USDT oraz do kontrolnego przeliczania wyników uzyskiwanych w aplikacji. Wzory i obowiązujące warianty obliczeń określa dokument [`metody-statystyczne.md`](../metody-statystyczne.md), a dane testowe zawiera jego rozdział 11.
+Katalog zawiera notebooki Jupyter do analizy BNB/USDT i weryfikacji wyników aplikacji. Wzory określa [dokument metod](../metody-statystyczne.md). Przykłady testowe znajdują się w jego rozdziale 11 oraz w [rozszerzonych danych testowych](../dane-testowe-rozszerzone.md).
+
+- [01](01-data-download.ipynb) pobiera i sprawdza zamknięte świece UTC.
+- [02](02-descriptive-stats.ipynb) oblicza statystyki opisowe.
+- [03](03-rolling-and-distribution.ipynb) oblicza wskaźniki kroczące i rysuje histogram.
+- [04](04-bnb-vs-btc.ipynb) porównuje BNB z BTC.
+- [05](05-event-study-and-volume.ipynb) analizuje zdarzenia i wolumen.
+
+Wspólny kod pobierania i wyznaczania dziennych relacji cen znajduje się w [module market_data](market_data.py). Świece pozostają w pamięci, a wyniki notebooków zawierają podsumowania i wykresy.
 
 ## 2. Wymagania
 
 - Python w wersji 3.12 lub nowszej.
-- Biblioteki wymienione w pliku [`requirements.txt`](requirements.txt). Wersje bibliotek są ustalone dokładnie, co zapewnia identyczne wyniki liczbowe u wszystkich członków zespołu.
+- Biblioteki z wersjami określonymi w [requirements.txt](requirements.txt).
 
 ## 3. Przygotowanie środowiska
 
-Środowisko wirtualne tworzy się jednorazowo w katalogu głównym repozytorium. Katalog `.venv/` jest wyłączony z repozytorium w pliku `.gitignore`.
+Środowisko wirtualne tworzy się jednorazowo w katalogu głównym repozytorium. W repozytorium katalog `.venv/` jest wyłączony przez `.gitignore`.
 
 System Windows (PowerShell):
 

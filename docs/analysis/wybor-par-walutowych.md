@@ -4,14 +4,14 @@ Autor: @mmichalskii1
 
 ## 1. Definicja pary
 
-Cena aktywa na giełdzie jest zawsze wyrażona w innym aktywie. Para BNB/USDT, w API `BNBUSDT`, określa, ile USDT kosztuje 1 BNB. Obie pary w analizie są kwotowane w USDT, więc ceny i zwroty są w tej samej jednostce i można je porównywać. Pary z USDT mają też na Binance największy obrót.
+Cena aktywa na giełdzie jest wyrażona w innym aktywie. Para BNB/USDT, w API `BNBUSDT`, określa, ile USDT kosztuje 1 BNB. Obie ceny są kwotowane w USDT, a porównujemy ich względne zmiany, czyli zwroty.
 
 ## 2. Wybrane pary
 
 - BNB/USDT: główny przedmiot analizy,
 - BTC/USDT: punkt odniesienia dla rynku.
 
-BNB to token powiązany z giełdą Binance i natywny token sieci BNB Chain. Jego cena zależy od całego rynku i od sytuacji giełdy, co pozwala określić, jaka część ruchu ceny wynika z rynku, a jaka z wydarzeń wokół Binance. BTC to największa kryptowaluta, względem niej liczone są korelacja i beta BNB. Obie pary są notowane od 2017 roku.
+BNB jest powiązany z giełdą Binance i jest natywnym tokenem BNB Chain. BTC służy jako punkt odniesienia. Korelacja i beta opisują zależność między zwrotami obu aktywów. Przy analizie zdarzeń model pozwala oszacować, jak bardzo zwroty BNB odbiegały od oczekiwań opartych na zwrotach BTC. Obie pary są notowane od 2017 roku.
 
 ## 3. Uwagi
 
