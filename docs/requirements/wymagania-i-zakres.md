@@ -88,7 +88,7 @@ Histogram dziennych zwrotów logarytmicznych. Wysokość słupka to liczba dni, 
 ### 6.7. BNB na tle BTC, konieczne
 
 - wykres zwrotu skumulowanego obu par, oba szeregi startują od 0%,
-- korelacja i beta,
+- korelacja Pearsona, kontrolna korelacja Spearmana, beta i $R^2$,
 - dodatkowo korelacja krocząca 90-dniowa, pokazująca, czy związek z rynkiem jest stały.
 
 ### 6.8. Wydarzenia wokół Binance, dodatkowe
@@ -97,7 +97,7 @@ Ważne wydarzenia zaznaczone na wykresie ceny oraz tabela z reakcją BNB na tle 
 
 ### 6.9. Wolumen, dodatkowe
 
-Wykres wolumenu pod wykresem ceny oraz zależność między wielkością ruchów ceny a obrotem względnym, czyli obrotem danego dnia na tle średniej z ostatnich 30 dni.
+Wykres wolumenu pod wykresem ceny oraz korelacja wielkości dziennych zwrotów z wolumenem względnym. Wolumen względny to logarytm stosunku obrotu danego dnia do średniej z 30 poprzednich dni kalendarzowych.
 
 ### 6.10. Informacja o BNB, konieczne
 
@@ -205,32 +205,32 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 
 - Zwroty i wskaźniki procentowe są ułamkami, np. 0,05, a na procenty zamieniane dopiero przy wyświetlaniu.
 - Obsunięcie jest zawsze ujemne albo równe 0, korelacja mieści się między −1 a 1, a beta może być dowolna.
-- Z N cen powstaje N−1 zwrotów, pierwszy dzień okresu nie ma zwrotu.
+- Z N cen powstaje najwyżej N−1 dziennych zwrotów. Pierwszy dzień wybranego okresu nie ma zwrotu w statystykach okresu, a zwroty obejmujące luki są pomijane.
 - Zmienność na skalę roczną przelicza się mnożąc przez pierwiastek z 365, a nie przez 365 ani 252.
 
 ### 11.3. Wymagana liczba danych
 
 - wykres ceny: 1 dzień,
 - statystyki opisowe: 2 zwroty,
-- CAGR: okres co najmniej 365 dni kalendarzowych między pierwszą a ostatnią ceną, czyli 366 cen,
+- CAGR: co najmniej 365 dni kalendarzowych między pierwszą a ostatnią ceną,
 - zmienność okresu: 2 zwroty, wiarygodnie od 30,
 - zmienność krocząca: 31 cen, czyli 30 zwrotów,
-- SMA i EMA: tyle cen, ile wynosi okno, czyli 20, 50 lub 200,
+- SMA i EMA: 20, 50 lub 200 kolejnych dziennych cen, zależnie od okna,
 - obsunięcie: 2 ceny,
 - skośność: 3 zwroty, kurtoza: 4 zwroty, obie wiarygodnie od 365, bo przy grubych ogonach jeden skrajny dzień potrafi zmienić wynik,
 - histogram: 2 zwroty, wiarygodnie od 30,
 - korelacja i beta z BTC: 2 wspólne zwroty, wiarygodnie od 30,
-- korelacja krocząca: 90 wspólnych zwrotów,
-- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla opcjonalnego okna od −5 do +5 dni 5 dni po nim, niezależnie od wybranego okresu,
-- wolumen: 31 dni, bo obrót względny wymaga średniej z 30 dni, wiarygodnie od 90.
+- korelacja krocząca: 90 kolejnych dni kalendarzowych z poprawnymi zwrotami obu par,
+- analiza zdarzenia: estymacja w oknie od −120 do −11 z co najmniej 3 wspólnymi zwrotami po wykluczeniach oraz pełne okno zdarzenia od −1 do +1 lub od −5 do +5. Estymacja poniżej 30 zwrotów otrzymuje ostrzeżenie,
+- wolumen względny: obrót danego dnia oraz pełne dane z 30 poprzednich dni. Do korelacji potrzeba co najmniej dwóch dni z obrotem względnym i poprawnym zwrotem. Próba poniżej 90 wspólnych obserwacji otrzymuje ostrzeżenie.
 
 Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało danych, wymagane 365 dni”. Między minimum a poziomem wiarygodnym wynik jest liczony z ostrzeżeniem.
 
 ### 11.4. Wskaźniki kroczące
 
-Wskaźnik kroczący liczony jest osobno dla każdego dnia z ostatnich N dni, łącznie z tym dniem. Dni bez pełnego okna mają pustą wartość, a nie zero, bo zero oznaczałoby dzień bez ruchu ceny.
+Wskaźnik kroczący jest liczony w pełnym oknie kalendarzowym kończącym się w bieżącym dniu. Niepełne okna dają puste wartości i przerwy na wykresie. Po luce EMA wznawia się od SMA z pierwszego pełnego okna.
 
-Żeby wartości były od pierwszego dnia okresu, pobieranych jest dodatkowo 200 dni wcześniejszych, co wystarcza dla SMA200. Służą one tylko do rozgrzania wskaźników i do okien estymacji w analizie wydarzeń, nie są pokazywane na wykresach i nie wchodzą do pozostałych statystyk.
+Pobieramy dodatkowe 200 dni, aby wyznaczyć wskaźniki kroczące i wolumen względny od początku okresu oraz zasilić okna estymacji w analizie zdarzeń. Wcześniejsze świece nie wchodzą bezpośrednio do statystyk okresu ani na jego wykres cen.
 
 ### 11.5. Opisy wskaźników w interfejsie
 

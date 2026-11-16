@@ -12,16 +12,16 @@ Analiza opiera się na cenach zamknięcia dziennych świec z Binance: `BNBUSDT` 
 
 - $P_t$ to cena zamknięcia w dniu $t$,
 - $r_t$ to zwrot prosty, $R_t$ to zwrot logarytmiczny,
-- $n$ to liczba zwrotów, o jeden mniejsza niż liczba cen,
-- $M_t$ to zwrot logarytmiczny BTC, czyli rynku.
+- $n$ to liczba poprawnych dziennych zwrotów, o jeden mniejsza niż liczba cen przy pełnym szeregu,
+- $M_t$ to zwrot logarytmiczny BTC, używany jako punkt odniesienia dla rynku.
 
-Gdy brakuje dnia, luka jest odnotowana, bez interpolacji. Zwrot między sąsiednimi dostępnymi dniami obejmuje wtedy więcej niż jeden dzień i zawyżałby zmienność, dlatego nie wchodzi do statystyk dziennych: średniej, mediany, zmienności, rozkładu, korelacji, bety ani analizy wydarzeń. Zwrot za cały okres i CAGR są liczone z cen, więc luki na nie nie wpływają. Skala roczna używa 365 dni, bo rynek krypto działa codziennie.
+Gdy brakuje dnia, luka jest odnotowana bez interpolacji. Zwrot między sąsiednimi dostępnymi dniami obejmuje wtedy więcej niż jedną dobę i jest wyłączony ze statystyk dziennych. Zwrot za cały okres i CAGR wykorzystują pierwszą i ostatnią dostępną cenę oraz, w przypadku CAGR, odstęp w dniach kalendarzowych. Skala roczna używa 365 dni, bo rynek krypto działa codziennie.
 
 ### 2.1. Okres analizy
 
-Analiza obejmuje okres od 1 stycznia 2023 do wczoraj, czyli do ostatniej zamkniętej świecy. W październiku 2026 to około 1390 dni, a codziennie przybywa jeden. Początek w 2023 roku wybrano, bo analiza dotyczy rynku po upadku Terry i FTX w 2022 roku, dane są świeże i jest ich dość na stabilne statystyki, a w okresie mieszczą się najważniejsze wydarzenia wokół Binance. Początek 2023 roku to okolice dołka cyklu, gdy BNB kosztował około 245 USDT, a BTC około 16,5 tys. USDT, więc zwrot za cały okres i CAGR są wysokie i mocno zależą od daty początkowej. Trzeba to zaznaczać przy opisie wyników.
+Analiza obejmuje okres od 1 stycznia 2023 do ostatniego zamkniętego dnia UTC. Obejmuje rynek po upadku Terry i FTX w 2022 roku oraz późniejsze wydarzenia wokół Binance. Początek 2023 roku przypada w pobliżu dołka cyklu, gdy BNB kosztował około 245 USDT, a BTC około 16,5 tys. USDT. Przy interpretacji zwrotu za okres i CAGR należy uwzględnić ich zależność od punktu startowego.
 
-Statystyki opisowe, rozkład zwrotów, korelacja, beta i obsunięcie liczone są na całym wybranym okresie, a wskaźniki kroczące mają własne okna. Potrzebują one danych sprzed okresu, np. 200 dni dla SMA200, które nie wchodzą do pozostałych statystyk. Analiza wydarzeń nie zależy od wybranego okresu, bo każde wydarzenie ma własne okna, a dane sprzed 2023 roku służą też do jej okien estymacji. Przy krótszym okresie statystyki wymagające więcej obserwacji pokazują ostrzeżenie. Wyniki w dokumentacji są opisywane z datą ostatniego dnia danych i odświeżane przed oddaniem projektu.
+Statystyki opisowe, rozkład zwrotów, korelacja i beta dla całego okresu oraz obsunięcie wykorzystują dane z wybranego okresu. Pierwsza cena okresu nie ma dziennego zwrotu. Wcześniejsze świece służą wyłącznie do obliczania wskaźników z oknami kroczącymi, wartości wolumenu względnego oraz estymacji modelu dla zdarzeń. Analiza zdarzeń używa własnych okien niezależnie od wybranego okresu. Wyniki w dokumentacji podają datę ostatniego dnia danych.
 
 ## 3. Zwroty
 
@@ -29,7 +29,7 @@ $$
 r_t = \frac{P_t}{P_{t-1}} - 1 \qquad\qquad R_t = \ln\frac{P_t}{P_{t-1}}
 $$
 
-Zwrot prosty jest intuicyjny, a logarytmiczne sumują się w czasie, $\sum R_t = \ln(P_N/P_0)$, więc większość statystyk liczona jest na nich. Podział:
+Zwrot prosty podaje względną zmianę ceny. Dla ciągłego szeregu sumę zwrotów logarytmicznych można zapisać jako $\sum R_t = \ln(P_N/P_0)$. Przy lukach suma ważnych zwrotów dziennych obejmuje tylko odcinki z dostępnymi danymi. Projekt stosuje następujący podział:
 - zwroty proste: średnia, mediana, najgorszy i najlepszy dzień,
 - zwroty logarytmiczne: zmienność, skośność, kurtoza, histogram, korelacja, beta, analiza wydarzeń,
 - zwrot za cały okres liczony z cen jako $P_N/P_0 - 1$.
@@ -40,7 +40,7 @@ Na zwrotach prostych:
 - liczba dni $n$, pokazywana zawsze, bo od niej zależy wiarygodność reszty,
 - średni dzienny zwrot i mediana, mniej wrażliwa na skrajne dni,
 - najgorszy i najlepszy dzień z datą,
-- odsetek dni wzrostowych, bez dni o zerowej zmianie,
+- odsetek dni wzrostowych wśród dni o niezerowym zwrocie. Gdy wszystkie zwroty są zerowe, odsetek jest nieokreślony,
 - zwrot za cały okres, $P_N/P_0 - 1$,
 - średni roczny zwrot CAGR, $(P_N/P_0)^{365/d} - 1$, gdzie $d$ to liczba dni kalendarzowych między datą pierwszej i ostatniej ceny. Liczony tylko wtedy, gdy $d \ge 365$.
 
@@ -64,7 +64,7 @@ Dzienne odchylenie $s$ jest podawane w tabeli statystyk obok zmienności rocznej
 
 ### 5.2. Zmienność krocząca
 
-To samo w oknie 30 zwrotów, czyli 31 cen, pokazywane w skali rocznej, $s \cdot \sqrt{365}$, żeby było porównywalne ze zmiennością całego okresu. Pierwsza wartość jest przy 31. cenie, wcześniejsze dni nie mają wartości. Skoki zmienności warto zestawić z wydarzeniami z rozdziału 9.
+W każdym dniu z pełnym oknem 30 kolejnych zwrotów, czyli 31 kolejnych cen zamknięcia, liczymy zmienność w skali rocznej $s \cdot \sqrt{365}$. Pierwsza wartość w ciągłym szeregu pojawia się przy 31. cenie. Gdy okno zawiera lukę, pomijamy wartość i przerywamy linię wykresu.
 
 ## 6. Średnie kroczące
 
@@ -76,7 +76,7 @@ $$
 \text{EMA}_t = \alpha P_t + (1-\alpha)\,\text{EMA}_{t-1},\quad \alpha = \frac{2}{w+1}
 $$
 
-Pierwsza wartość EMA to SMA z pierwszych $w$ dni. Średnie pokazują trend i nie służą do sygnałów kupna ani sprzedaży.
+SMA wymaga $w$ cen z kolejnych dni kalendarzowych. Pierwsza wartość EMA w każdym ciągłym odcinku to SMA z pierwszych $w$ dni tego odcinka. Po luce EMA jest pusta do chwili zebrania nowego pełnego okna. Średnie służą do opisu trendu cenowego.
 
 ## 7. Obsunięcie
 
@@ -86,7 +86,7 @@ DD_t = \frac{P_t}{\max_{s \le t} P_s} - 1
 \text{MDD} = \min_t DD_t
 $$
 
-Dla maksymalnego obsunięcia podawane są data szczytu, data dołka, liczba dni spadku oraz informacja, czy i kiedy cena wróciła do szczytu. Szczyt sprzed okresu nie jest uwzględniany, więc wynik zależy od daty początkowej, a liczenie na cenach zamknięcia pomija spadki w ciągu dnia.
+Dla maksymalnego obsunięcia podajemy datę szczytu, datę dołka, odstęp w dniach kalendarzowych i pierwszą późniejszą datę zamknięcia na poziomie szczytu lub powyżej. Przy remisie wybieramy pierwszy dołek i ostatni równy szczyt przed nim. Przy obsunięciu równym zero daty i odstęp pozostają puste. Szczyt wyznaczamy w wybranym okresie na podstawie cen zamknięcia.
 
 ## 8. Rozkład zwrotów
 
@@ -102,15 +102,15 @@ $$
 G_2 = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \sum \left(\frac{R_t - \bar{R}}{s}\right)^4 - \frac{3(n-1)^2}{(n-2)(n-3)}
 $$
 
-Kurtoza jest nadwyżkowa, czyli dla rozkładu normalnego, w którym wartości skrajne są bardzo rzadkie, wynosi około 0. Wartość dodatnia oznacza grube ogony, czyli dni skrajne częstsze niż w rozkładzie normalnym, co na rynku krypto jest typowe. Ujemna skośność oznacza dłuższy lewy ogon, czyli skrajne spadki większe niż skrajne wzrosty. Uwaga na biblioteki: `scipy.stats.kurtosis` domyślnie liczy wersję nieskorygowaną.
+Kurtoza jest nadwyżkowa. W rozkładzie normalnym jej wartość teoretyczna wynosi 0, a w próbie może od niej odbiegać. Dodatnia kurtoza wskazuje na większy udział skrajnych wartości w czwartym momencie rozkładu. Ujemna skośność sugeruje asymetrię w stronę ujemnych zwrotów. Funkcja `scipy.stats.kurtosis` domyślnie liczy wersję nieskorygowaną.
 
-Obie miary są bardzo wrażliwe na pojedyncze skrajne dni. Nawet dla rozkładu normalnego błąd standardowy wynosi około $\sqrt{6/n}$ dla skośności i $\sqrt{24/n}$ dla kurtozy, czyli przy 30 zwrotach 0,45 i 0,89, a przy grubych ogonach jest jeszcze większy. Dlatego wyniki są traktowane jako wiarygodne od 365 zwrotów, a przy opisie warto sprawdzić, czy znak skośności nie zmienia się po pominięciu jednego, najbardziej skrajnego dnia.
+Obie miary są wrażliwe na pojedyncze skrajne dni. Przy niezależnych obserwacjach z rozkładu normalnego przybliżone błędy standardowe to $\sqrt{6/n}$ dla skośności i $\sqrt{24/n}$ dla kurtozy, czyli około 0,45 i 0,89 przy 30 zwrotach. W projekcie próba poniżej 365 zwrotów otrzymuje ostrzeżenie. Przy opisie warto sprawdzić, czy znak skośności zmienia się po pominięciu najbardziej skrajnej obserwacji.
 
 ### 8.2. Histogram
 
-Histogram zwrotów logarytmicznych, w którym wysokość słupka to liczba dni z danego przedziału. Szerokość przedziałów wyznacza reguła Freedmana-Diaconisa, $h = 2 \cdot \text{IQR} \cdot n^{-1/3}$, przy liczbie przedziałów od 20 do 100. IQR to różnica między trzecim a pierwszym kwartylem, liczonymi z interpolacją liniową, jak `QUARTILE.INC` w Excelu i `.quantile()` w pandas.
+Histogram pokazuje liczbę dni w przedziałach zwrotów logarytmicznych. Reguła Freedmana-Diaconisa wyznacza wstępną szerokość $h = 2 \cdot \text{IQR} \cdot n^{-1/3}$. Liczbę przedziałów obliczamy jako $\lceil(\max R_t-\min R_t)/h\rceil$ i ograniczamy do zakresu od 20 do 100. Gdy IQR wynosi 0, przyjmujemy 20 przedziałów. IQR to różnica między trzecim a pierwszym kwartylem liczonymi z interpolacją liniową, jak `QUARTILE.INC` w Excelu i `.quantile()` w pandas.
 
-Prawa strona od zera to dni wzrostowe, lewa spadkowe. Oś jest opisana jako zwrot logarytmiczny, bo przy dużych ruchach różni się on od zmiany procentowej, np. spadek o 10% to $R_t = -0{,}105$. Na histogram nakładana jest gęstość rozkładu normalnego o średniej $\bar{R}$ i odchyleniu $s$, przeskalowana do liczby dni. Szerokość histogramu pokazuje zmienność, a dodatnią kurtozę widać jako słupki wyższe od krzywej w środku i na brzegach, a niższe pomiędzy nimi.
+Prawa strona od zera to zwroty dodatnie, a lewa ujemne. Spadek o 10% odpowiada zwrotowi logarytmicznemu około $-0{,}105$. Gęstość rozkładu normalnego o średniej $\bar{R}$ i odchyleniu $s$, pomnożona przez liczbę zwrotów i faktyczną szerokość przedziału, daje skalę porównywalną z wysokością słupków. Krzywą pokazujemy, gdy $s>0$.
 
 ## 9. BNB na tle rynku
 
@@ -125,15 +125,15 @@ $$
 $$
 
 Beta to nachylenie regresji $R_t = \alpha + \beta M_t$, w Excelu `SLOPE`. Liczony jest też $R^2 = \rho^2$. Interpretacja:
-- korelacja poniżej 0,3 to związek słaby, 0,3 do 0,7 umiarkowany, powyżej 0,7 silny, a wartość bliska 0 oznacza brak związku liniowego,
-- beta około 1 oznacza, że BNB średnio reaguje na ruchy BTC z tą samą siłą, powyżej 1 silniej, poniżej 1 słabiej. Beta to $\rho \cdot s_{BNB} / s_{BTC}$, więc przy słabej korelacji beta bliska 1 nie oznacza, że oba szeregi poruszają się podobnie,
-- $R^2$ to część wariancji zwrotów BNB wyjaśniona przez rynek, a $1 - R^2$ to część specyficzna dla BNB.
+- znak korelacji określa kierunek zależności. Umownie $|\rho|<0{,}3$ opisujemy jako słaby związek liniowy, od 0,3 do 0,7 jako umiarkowany, a powyżej 0,7 jako silny,
+- beta bliska 1 oznacza, że model przewiduje zmianę zwrotu BNB zbliżoną do zmiany zwrotu BTC. Przy becie ujemnej kierunek jest przeciwny. Beta ma postać $\rho \cdot s_{BNB}/s_{BTC}$, więc silne nachylenie może współwystępować ze słabą korelacją,
+- $R^2$ to udział wariancji zwrotów BNB wyjaśniany przez model z BTC w badanej próbie. $1-R^2$ to udział wariancji pozostający w resztach modelu.
 
-Korelacja Pearsona jest wrażliwa na pojedyncze skrajne dni, dlatego kontrolnie liczona jest też korelacja rang Spearmana. Wyraźna różnica między nimi oznacza, że wynik zależy od kilku dni.
+Kontrolnie liczymy korelację rang Spearmana. Rozbieżność może wynikać z wpływu obserwacji skrajnych lub z nieliniowej zależności monotonicznej. Korelacje są nieokreślone, gdy przynajmniej jeden szereg zwrotów jest stały. Beta jest nieokreślona przy zerowej wariancji zwrotów BTC.
 
 ### 9.2. Korelacja krocząca
 
-Korelacja w oknie 90 dni, pokazująca, czy związek BNB z rynkiem jest stały, czy słabnie w niektórych okresach.
+Korelacja Pearsona w oknie 90 kolejnych dni kalendarzowych z poprawnym dziennym zwrotem dla obu par. Okno może sięgać przed początek wybranego okresu. Brak poprawnego zwrotu w oknie albo zerowa wariancja jednego z szeregów daje pustą wartość i przerwę na wykresie.
 
 ### 9.3. Wydarzenia wokół Binance
 
@@ -144,22 +144,27 @@ Analiza zdarzeń sprawdza, czy przy ważnych wydarzeniach cena BNB zachowywała 
 - 30.04.2024: Changpeng Zhao zostaje skazany na 4 miesiące więzienia,
 - 27.09.2024: Changpeng Zhao wychodzi na wolność,
 - 29.05.2025: SEC umarza sprawę przeciw Binance,
-- 23.10.2025: prezydent USA ułaskawia Changpenga Zhao.
+- 23.10.2025: prezydent USA ułaskawia Changpenga Zhao,
+- 29.10.2026: atak na Binance. [TRM Labs](https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history) oszacował wartość wypływu środków z portfeli Binance na około 6,36 mld USD. Zamknięcie BNB/USDT spadło z 759,85 USDT 28.10 do 698,46 USDT 29.10, czyli o 8,08%. BTC/USDT spadł o 4,12%, a następnego dnia BNB wzrósł o 0,85%. Zwroty proste i CAR pokazują odpowiednio [notebook 02](notebooks/02-descriptive-stats.ipynb) i [notebook 05](notebooks/05-event-study-and-volume.ipynb).
 
-Część wydarzeń była wcześniej znana albo zapowiadana: termin wyjścia na wolność wynikał z wyroku, wstrzymanie sprawy SEC ogłoszono w lutym 2025, a o możliwym ułaskawieniu media pisały od wiosny 2025. Analiza zdarzeń mierzy reakcję na nową informację, więc przy takich wydarzeniach brak reakcji jest oczekiwany i nie oznacza, że wydarzenie było nieważne.
+Część wydarzeń była wcześniej znana albo zapowiadana. Oczekiwania rynku mogą więc znaleźć odzwierciedlenie w cenach przed rozpoczęciem okna zdarzenia. Jest to istotne m.in. dla wyjścia Changpenga Zhao z więzienia, zakończenia sprawy SEC i ułaskawienia.
 
 Procedura:
-1. Na dniach od −120 do −11 przed wydarzeniem szacowana jest regresja $R_t = \alpha + \beta M_t$, czyli na $L = 110$ dniach. Przerwa przed wydarzeniem ogranicza wpływ przecieków informacji. Z okna estymacji wyłączane są dni z okien od −5 do +5 innych wydarzeń z listy, np. pozew CFTC wypada w oknie estymacji pozwu SEC, oraz dni oznaczone przy walidacji jako zmiana ceny powyżej 50%. Dla wydarzeń z początku 2023 roku okno sięga do danych z 2022 roku, pobieranych do rozgrzania wskaźników.
-2. W oknie wydarzenia, czyli dzień przed, w dniu wydarzenia i dzień po, liczony jest zwrot nadzwyczajny, czyli część ruchu niewyjaśniona przez BTC: $AR_t = R_t - (\hat{\alpha} + \hat{\beta} M_t)$. Opcjonalnie liczone jest też okno od −5 do +5 dni, które wymaga 5 dni danych po wydarzeniu.
-3. Zwroty nadzwyczajne są sumowane: $CAR = \sum AR_t$.
-4. Istotność sprawdza $t = CAR / (s_\varepsilon \sqrt{T})$, gdzie $s_\varepsilon$ to odchylenie reszt z kroku 1 z dzielnikiem $L-2$, a $T$ to długość okna wydarzenia. Wartość $|t| > 1{,}96$ oznacza reakcję istotną na poziomie 5%.
-5. Kontrolnie CAR jest liczony też z $\alpha = 0$, czyli $AR_t = R_t - \hat{\beta} M_t$. Stała $\hat{\alpha}$ przenosi do okna wydarzenia trend z okresu estymacji. Gdy BNB w tym okresie mocno rósł niezależnie od rynku, $\hat{\alpha}$ jest wysokie, a zwroty nadzwyczajne wychodzą sztucznie ujemne. Wyraźna różnica między wariantami jest opisywana przy wyniku.
+1. Na dniach od −120 do −11 przed zdarzeniem szacujemy regresję $R_t = \alpha + \beta M_t + \varepsilon_t$. Z maksymalnie 110 dni odrzucamy dni bez wspólnych zwrotów, dni z okien od −5 do +5 innych zdarzeń oraz daty z dzienną zmianą ceny ponad 50% dla BNB lub BTC. $L$ oznacza faktyczną liczbę zwrotów w estymacji. Model wymaga $L \ge 3$ i dodatniej wariancji BTC. Przy $L<30$ oznaczamy próbę jako krótką.
+2. W oknach od −1 do +1 i od −5 do +5 liczymy $AR_t = R_t - (\hat{\alpha} + \hat{\beta} M_t)$. Każde okno wymaga poprawnych zwrotów BNB i BTC dla wszystkich dni.
+3. Sumujemy zwroty nadzwyczajne $CAR = \sum AR_t$. Wynik podajemy w jednostkach zwrotu logarytmicznego.
+4. W błędzie prognozy uwzględniamy niepewność oszacowania parametrów regresji. $T$ oznacza liczbę dni okna zdarzenia, $\bar M_{\mathrm{est}}$ to średni zwrot BTC w próbie estymacyjnej, a $S_{xx}=\sum_{t\in\mathrm{est}}(M_t-\bar M_{\mathrm{est}})^2$. Odchylenie reszt $s_\varepsilon$ obliczamy z dzielnikiem $L-2$.
 
-Wyraźnie ujemny CAR oznacza, że BNB spadł mocniej, niż wynikałoby z ruchu BTC, czyli reakcję specyficzną dla Binance. Ograniczenia:
-- to pojedyncze wydarzenia, więc wnioski są opisowe,
-- 7 wydarzeń i 2 okna dają 14 testów, więc przy poziomie 5% jeden przypadkowo istotny wynik jest prawdopodobny, a przybliżenie rozkładem normalnym przy grubych ogonach jest niedokładne,
-- wydarzenie wpływające na cały rynek, jak ułaskawienie Changpenga Zhao, jest częściowo pochłaniane przez BTC,
-- okno estymacji ułaskawienia obejmuje krach z 10.10.2025 oraz okres, w którym BNB bił rekordy niezależnie od rynku, więc dla tego wydarzenia wariant z kroku 5 jest szczególnie ważny.
+   $$
+   SE(CAR) = s_\varepsilon \sqrt{T + \frac{T^2}{L} +
+       \frac{(\sum_{\mathrm{zdarzenie}} M_t - T\bar M_{\mathrm{est}})^2}{S_{xx}}},
+   \qquad t = \frac{CAR}{SE(CAR)}
+   $$
+
+   Dwustronną wartość $p$ wyznaczamy z rozkładu t z $L-2$ stopniami swobody. Zakładamy niezależne błędy o stałej wariancji i normalnym rozkładzie. Przy zerowym błędzie standardowym $t$ i $p$ pozostają puste. Dla 16 zaplanowanych porównań stosujemy korektę Holma przy poziomie 0,05. Porównania bez wyniku pozostają puste i wliczają się do liczby zaplanowanych testów. Metoda opiera się na [analizie błędu prognozy w modelu rynkowym opisanej przez MacKinlaya](https://www.bu.edu/econ/files/2011/01/MacKinlay-1996-Event-Studies-in-Economics-and-Finance.pdf).
+5. Kontrolnie podstawiamy $\alpha=0$, pozostawiając $\hat{\beta}$ z tej samej regresji. $CAR^{(0)}=\sum(R_t-\hat{\beta}M_t)$ sprawdza wrażliwość wyniku na użycie wyrazu wolnego.
+
+Ujemny CAR oznacza, że łączny zwrot BNB był niższy od prognozy modelu z BTC. Gdy zdarzenie oddziałuje również na BTC, benchmark ujmuje część reakcji wspólnej dla obu par. Wyniki pozostają zależne od wyboru benchmarku, okna i założeń o resztach. Wnioski mają charakter opisowy.
 
 ## 10. Wolumen
 
@@ -169,7 +174,7 @@ $$
 V^{\text{wzgl}}_t = \ln\frac{V_t}{\frac{1}{30}\sum_{i=1}^{30} V_{t-i}}
 $$
 
-czyli logarytm obrotu danego dnia na tle średniej z 30 poprzednich dni. Logarytm ogranicza wpływ dni z ogromnym obrotem. Badana jest korelacja między wielkością ruchu ceny $|R_t|$ a $V^{\text{wzgl}}_t$, liczona metodą Pearsona i kontrolnie Spearmana. Oczekiwany jest związek dodatni.
+Średnia obejmuje 30 poprzednich dni kalendarzowych, z uwzględnieniem zerowych wartości obrotu. Przy luce, zerowym obrocie w dniu $t$ lub zerowej średniej wolumen względny pozostaje pusty. Korelacje Pearsona i Spearmana wykorzystują dni z poprawnym $V^{\text{wzgl}}_t$ i dziennym zwrotem BNB obliczonym wewnątrz wybranego okresu. Miary mają charakter opisowy i wymagają co najmniej dwóch wspólnych obserwacji oraz zmienności w obu szeregach. Próba poniżej 90 obserwacji otrzymuje ostrzeżenie.
 
 ## 11. Dane testowe
 
