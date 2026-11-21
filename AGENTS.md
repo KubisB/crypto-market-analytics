@@ -43,8 +43,10 @@ dotnet test
 
 cd src/frontend
 npm run test:unit   # watch mode; `npx vitest run` for a single run
-npm run lint
-npm run format
+npm run lint        # auto-fix
+npm run format      # auto-format
+npm run check:lint  # no fixes, fails on problems (CI)
+npm run check:format
 npm run build
 ```
 
@@ -58,5 +60,5 @@ npm run build
 - Commit messages: Conventional Commits, imperative mood, e.g. `feat: add Binance klines client`.
   Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`.
 - All tests go in `tests/`, never next to the application code in `src/`.
-- Build, tests and lint must pass before opening a pull request.
+- Build, tests and lint must pass before opening a pull request; CI (`.github/workflows/ci.yml`) runs them on every push and pull request. When adding a new check, add it to CI too.
 - AI output is a draft: the author of a change reviews, understands and tests it.
