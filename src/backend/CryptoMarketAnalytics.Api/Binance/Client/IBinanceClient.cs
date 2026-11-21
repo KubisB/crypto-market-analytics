@@ -1,4 +1,6 @@
-namespace CryptoMarketAnalytics.Api.Binance;
+using CryptoMarketAnalytics.Api.Domain;
+
+namespace CryptoMarketAnalytics.Api.Binance.Client;
 
 public interface IBinanceClient
 {
@@ -7,5 +9,5 @@ public interface IBinanceClient
     /// from <paramref name="from"/> to <paramref name="to"/>, inclusive, in ascending order.
     /// The candle of the current, unfinished day is never returned.
     /// </summary>
-    Task<IReadOnlyList<Kline>> GetDailyKlinesAsync(string symbol, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DailyCandle>> GetDailyCandlesAsync(string symbol, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
 }

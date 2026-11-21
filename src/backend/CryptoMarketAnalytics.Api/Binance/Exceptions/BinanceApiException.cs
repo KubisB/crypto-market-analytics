@@ -1,9 +1,9 @@
 using System.Net;
 
-namespace CryptoMarketAnalytics.Api.Binance;
+namespace CryptoMarketAnalytics.Api.Binance.Exceptions;
 
 /// <summary>The Binance API rejected a request or returned an unexpected response.</summary>
-public sealed class BinanceApiException(string message, HttpStatusCode? statusCode = null, TimeSpan? retryAfter = null, Exception? innerException = null)
+public class BinanceApiException(string message, HttpStatusCode? statusCode = null, TimeSpan? retryAfter = null, Exception? innerException = null)
     : Exception(message, innerException)
 {
     public HttpStatusCode? StatusCode { get; } = statusCode;

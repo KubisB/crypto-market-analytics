@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Net;
 using System.Web;
-using CryptoMarketAnalytics.Api.Binance;
+using CryptoMarketAnalytics.Api.Binance.Client;
+using CryptoMarketAnalytics.Api.Binance.Configuration;
+using CryptoMarketAnalytics.Api.Binance.Exceptions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -25,19 +27,16 @@ public class BinanceClientTests
     {
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.Json($"[{ExampleCandle}]"));
 
-        var klines = await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
+        var klines = await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
 
         var kline = Assert.Single(klines);
         Assert.Equal(new DateOnly(2026, 10, 12), kline.Date);
-        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1791763200000), kline.OpenTime);
-        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1791849599999), kline.CloseTime);
         Assert.Equal(754.24m, kline.Open);
         Assert.Equal(758.03m, kline.High);
         Assert.Equal(732.26m, kline.Low);
         Assert.Equal(732.91m, kline.Close);
         Assert.Equal(108635.607m, kline.Volume);
         Assert.Equal(81335469.84276m, kline.QuoteVolume);
-        Assert.Equal(509024, kline.TradeCount);
     }
 
     [Fact]
@@ -49,7 +48,7 @@ public class BinanceClientTests
 
         try
         {
-            var klines = await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
+            var klines = await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
 
             Assert.Equal(754.24m, Assert.Single(klines).Open);
         }
@@ -64,7 +63,7 @@ public class BinanceClientTests
     {
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.Json("[]"));
 
-        await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2023, 1, 1), new(2023, 1, 31));
+        await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2023, 1, 1), new(2023, 1, 31));
 
         var request = Assert.Single(handler.Requests);
         Assert.Equal("https://data-api.binance.vision/api/v3/klines", request.GetLeftPart(UriPartial.Path));
@@ -87,7 +86,7 @@ public class BinanceClientTests
             return FakeHttpMessageHandler.Json(Candles(startTime, count));
         });
 
-        var klines = await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", firstDay, new(2026, 1, 1));
+        var klines = await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", firstDay, new(2026, 1, 1));
 
         Assert.Equal(2, handler.Requests.Count);
         var secondStartTime = HttpUtility.ParseQueryString(handler.Requests[1].Query)["startTime"];
@@ -103,7 +102,7 @@ public class BinanceClientTests
         var yesterday = DateOnly.FromDateTime(Now.UtcDateTime).AddDays(-1);
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.Json(Candles(ToUnixMilliseconds(yesterday), 2)));
 
-        var klines = await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", yesterday, yesterday.AddDays(1));
+        var klines = await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", yesterday, yesterday.AddDays(1));
 
         Assert.Equal(yesterday, Assert.Single(klines).Date);
     }
@@ -115,7 +114,7 @@ public class BinanceClientTests
             ? FakeHttpMessageHandler.Json("{}", HttpStatusCode.ServiceUnavailable)
             : FakeHttpMessageHandler.Json($"[{ExampleCandle}]"));
 
-        var klines = await CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
+        var klines = await CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12));
 
         Assert.Single(klines);
         Assert.Equal(["data-api.binance.vision", "api.binance.com"], handler.Requests.Select(uri => uri.Host));
@@ -134,7 +133,7 @@ public class BinanceClientTests
         });
 
         var exception = await Assert.ThrowsAsync<BinanceApiException>(() =>
-            CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12)));
+            CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12)));
 
         Assert.True(exception.IsRateLimited);
         Assert.Equal(TimeSpan.FromSeconds(60), exception.RetryAfter);
@@ -147,11 +146,19 @@ public class BinanceClientTests
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.Json("""[["not", "a", "candle"]]"""));
 
         await Assert.ThrowsAsync<BinanceApiException>(() =>
-            CreateClient(handler).GetDailyKlinesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12)));
+            CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12)));
     }
 
+    private static readonly BinanceOptions TestOptions = new()
+    {
+        BaseUrl = new Uri("https://data-api.binance.vision"),
+        FallbackBaseUrl = new Uri("https://api.binance.com"),
+        Timeout = TimeSpan.FromSeconds(30),
+        UserAgent = "CryptoMarketAnalytics.Tests",
+    };
+
     private static BinanceClient CreateClient(FakeHttpMessageHandler handler) =>
-        new(new HttpClient(handler), Options.Create(new BinanceOptions()), new FixedTimeProvider(Now), NullLogger<BinanceClient>.Instance);
+        new(new HttpClient(handler), Options.Create(TestOptions), new FixedTimeProvider(Now), NullLogger<BinanceClient>.Instance);
 
     private static long ToUnixMilliseconds(DateOnly date) =>
         new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeMilliseconds();
