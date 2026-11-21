@@ -18,6 +18,13 @@ public class MarketOptions
     [Range(0, 1000)]
     public int WarmupDays { get; set; }
 
+    /// <summary>
+    /// Daily change of the closing price, as a fraction, above which a candle is flagged for manual review
+    /// (0.5 = 50%, chapter 7 of the requirements). Flagged candles are kept, not removed.
+    /// </summary>
+    [Range(0.01, 100.0)]
+    public decimal LargePriceChangeThreshold { get; set; }
+
     /// <summary>Earliest day the API serves: the analysis start minus the warm-up days.</summary>
     public DateOnly EarliestDate => AnalysisStartDate.AddDays(-WarmupDays);
 }

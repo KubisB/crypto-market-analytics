@@ -2,15 +2,14 @@ using System.Text.Json;
 using CryptoMarketAnalytics.Api.Binance.Configuration;
 using CryptoMarketAnalytics.Api.Binance.Exceptions;
 using CryptoMarketAnalytics.Api.Binance.Mapping;
-using CryptoMarketAnalytics.Api.Binance.Models;
 using CryptoMarketAnalytics.Api.Domain;
 using Microsoft.Extensions.Options;
 
 namespace CryptoMarketAnalytics.Api.Binance.Client;
 
 /// <summary>
-/// Client of the public Binance REST API (<c>GET /api/v3/klines</c>), as described in chapter 10
-/// of docs/requirements/wymagania-i-zakres.md. No account or API key is needed.
+/// Client of the public Binance REST API (<c>GET /api/v3/klines</c>, <c>GET /api/v3/exchangeInfo</c>),
+/// as described in chapter 10 of docs/requirements/wymagania-i-zakres.md. No account or API key is needed.
 /// </summary>
 public class BinanceClient(
     HttpClient httpClient,
@@ -40,41 +39,55 @@ public class BinanceClient(
         // the open time of the last kline received, until a page is shorter than the limit.
         while (startTime <= endTime)
         {
-            var page = await GetPageAsync(symbol, startTime, endTime, cancellationToken);
+            var path = $"api/v3/klines?symbol={Uri.EscapeDataString(symbol)}&interval=1d"
+                + $"&startTime={startTime.ToUnixTimeMilliseconds()}&endTime={endTime.ToUnixTimeMilliseconds()}&limit={PageSize}";
+            var page = await GetAsync(path, BinanceKlineMapper.FromJson, cancellationToken);
+
+            foreach (var reason in page.Rejected)
+            {
+                logger.LogWarning("Rejected {Symbol} kline from Binance: {Reason}", symbol, reason);
+            }
 
             // The API also returns the current, unfinished day; only closed klines are kept.
-            candles.AddRange(page.Where(kline => kline.CloseTime <= now).Select(BinanceKlineMapper.ToDailyCandle));
+            candles.AddRange(page.Klines.Where(kline => kline.CloseTime <= now).Select(BinanceKlineMapper.ToDailyCandle));
 
-            if (page.Count < PageSize)
+            if (page.RowCount < PageSize || page.LastOpenTime is null)
             {
                 break;
             }
 
-            startTime = page[^1].OpenTime + OneDay;
+            startTime = page.LastOpenTime.Value + OneDay;
         }
 
         return candles;
     }
 
-    private async Task<IReadOnlyList<BinanceKline>> GetPageAsync(string symbol, DateTimeOffset startTime, DateTimeOffset endTime, CancellationToken cancellationToken)
+    public Task<string> GetSymbolStatusAsync(string symbol, CancellationToken cancellationToken = default)
     {
-        var path = $"api/v3/klines?symbol={Uri.EscapeDataString(symbol)}&interval=1d"
-            + $"&startTime={startTime.ToUnixTimeMilliseconds()}&endTime={endTime.ToUnixTimeMilliseconds()}&limit={PageSize}";
+        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        return GetAsync(
+            $"api/v3/exchangeInfo?symbol={Uri.EscapeDataString(symbol)}",
+            root => BinanceKlineMapper.StatusFromExchangeInfo(root, symbol),
+            cancellationToken);
+    }
+
+    private async Task<T> GetAsync<T>(string path, Func<JsonElement, T> read, CancellationToken cancellationToken)
+    {
         var settings = options.Value;
 
         try
         {
-            return await SendAsync(new Uri(settings.BaseUrl!, path), cancellationToken);
+            return await SendAsync(new Uri(settings.BaseUrl!, path), read, cancellationToken);
         }
         catch (Exception exception) when (settings.FallbackBaseUrl is not null && IsServerSideFailure(exception, cancellationToken))
         {
             logger.LogWarning(exception, "Binance API at {BaseUrl} failed, retrying with {FallbackBaseUrl}",
                 settings.BaseUrl, settings.FallbackBaseUrl);
-            return await SendAsync(new Uri(settings.FallbackBaseUrl, path), cancellationToken);
+            return await SendAsync(new Uri(settings.FallbackBaseUrl, path), read, cancellationToken);
         }
     }
 
-    private async Task<IReadOnlyList<BinanceKline>> SendAsync(Uri uri, CancellationToken cancellationToken)
+    private async Task<T> SendAsync<T>(Uri uri, Func<JsonElement, T> read, CancellationToken cancellationToken)
     {
         using var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
@@ -87,15 +100,20 @@ public class BinanceClient(
                 GetRetryAfter(response));
         }
 
+        if (response.Headers.TryGetValues("X-MBX-USED-WEIGHT-1M", out var usedWeight))
+        {
+            logger.LogDebug("Binance request weight used in the last minute: {UsedWeight}", string.Join(",", usedWeight));
+        }
+
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         try
         {
             using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            return BinanceKlineMapper.FromJson(document.RootElement);
+            return read(document.RootElement);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException or FormatException)
         {
-            throw new BinanceApiException("Binance API returned klines in an unexpected format.", innerException: exception);
+            throw new BinanceApiException($"Binance API returned an unexpected response for {uri.GetLeftPart(UriPartial.Path)}.", innerException: exception);
         }
     }
 

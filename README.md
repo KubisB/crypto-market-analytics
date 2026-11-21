@@ -46,13 +46,13 @@ The project is carried out at the request of the course supervisor and is the ba
 
 ## 3. Team and responsibilities
 
-| Member                                             | Area                       | Responsibilities                             |
-| -------------------------------------------------- | -------------------------- | -------------------------------------------- |
-| [@KubisB](https://github.com/KubisB)               | Development                | Backend; split with frontend                 |
-| [@maciekk707](https://github.com/maciekk707)       | Development                | Frontend; split with backend                 |
-| [@elkrix](https://github.com/elkrix)               | Documentation and analysis | Project documentation, statistical analysis  |
-| [@mmichalskii1](https://github.com/mmichalskii1)   | Documentation and analysis | Project documentation, statistical analysis  |
-| [@KusmierekKuba](https://github.com/KusmierekKuba) | QA                         | Test strategy, testing, quality verification |
+| Member                                             | Area                         | Responsibilities                                   |
+| -------------------------------------------------- | ---------------------------- | -------------------------------------------------- |
+| [@KubisB](https://github.com/KubisB)               | Coordination and development | Coordination, CI and pull request reviews; backend |
+| [@maciekk707](https://github.com/maciekk707)       | Development                  | Frontend                                           |
+| [@elkrix](https://github.com/elkrix)               | Documentation and analysis   | Project documentation, statistical analysis        |
+| [@mmichalskii1](https://github.com/mmichalskii1)   | Documentation and analysis   | Project documentation, statistical analysis        |
+| [@KusmierekKuba](https://github.com/KusmierekKuba) | QA                           | Test strategy, testing, quality verification       |
 
 ## 4. Tech stack
 
@@ -61,7 +61,7 @@ The project is carried out at the request of the course supervisor and is the ba
 | Backend                        | C# / ASP.NET Core Web API (controllers, OpenAPI) on .NET 10 LTS (`net10.0`)                                  | Decided   |
 | Frontend                       | Vue 3 + TypeScript, Vite; ESLint, Oxlint and Prettier                                                        | Decided   |
 | Data source                    | Binance public REST API (`https://data-api.binance.vision`, `GET /api/v3/klines`), daily candles, no API key | Decided   |
-| Data storage                   | Local storage of downloaded candles; form (e.g. SQLite or files) _[TBD]_                                     | **[TBD]** |
+| Data storage                   | SQLite via Entity Framework Core 10 (migrations), file in `data-base/`                                       | Decided   |
 | Backend tests                  | xUnit, integration tests with `WebApplicationFactory`                                                        | Decided   |
 | Frontend unit tests            | Vitest, Vue Test Utils                                                                                       | Decided   |
 | E2E tests                      | _[TBD]_                                                                                                      | **[TBD]** |
@@ -90,6 +90,7 @@ crypto-market-analytics/
 │   │   └── notebooks/                     # Jupyter notebooks for analysis and verification, requirements.txt
 │   ├── architecture/                      # architecture, diagrams, technical decisions (planned)
 │   └── requirements/                      # requirements, scope, user stories
+├── data-base/                             # local SQLite database, created on first run (not committed)
 ├── src/
 │   ├── backend/
 │   │   └── CryptoMarketAnalytics.Api/     # ASP.NET Core Web API (.NET 10)
@@ -106,6 +107,7 @@ crypto-market-analytics/
 ├── AGENTS.md                              # guidelines for AI assistants working on the repository
 ├── CLAUDE.md                              # points Claude Code to AGENTS.md
 ├── CryptoMarketAnalytics.slnx             # .NET solution (new XML solution format)
+├── dotnet-tools.json                      # local .NET tools (dotnet-ef for migrations); `dotnet tool restore`
 ├── global.json                            # pins .NET SDK 10 (newer 10.x feature bands allowed)
 └── README.md
 ```
@@ -128,7 +130,10 @@ All tests live in `tests/`, separate from the application code. The frontend too
 git clone https://github.com/KubisB/crypto-market-analytics.git
 cd crypto-market-analytics
 
-# 2. Backend: build, test and run (http://localhost:5299)
+# 2. Backend: trust the development HTTPS certificate (once per machine), build, test and run
+#    (https://localhost:7134, also http://localhost:5299)
+dotnet dev-certs https --trust
+dotnet tool restore
 dotnet build
 dotnet test
 dotnet run --project src/backend/CryptoMarketAnalytics.Api
@@ -139,41 +144,52 @@ npm install
 npm run dev
 ```
 
-Check that the backend is running: `GET http://localhost:5299/api/health` returns `Healthy`. In development the Vite dev server forwards every `/api/*` request to the backend, so the frontend calls the API with relative URLs (e.g. `fetch('/api/health')`).
+Check that the backend is running: `GET https://localhost:7134/api/health` returns `Healthy`. In development the Vite dev server forwards every `/api/*` request to the backend over HTTPS, so the frontend calls the API with relative URLs (e.g. `fetch('/api/health')`).
+
+`dotnet dev-certs https --trust` works on Windows and macOS; on Linux see [trusting the certificate on Linux](https://learn.microsoft.com/aspnet/core/security/enforcing-ssl#trust-https-certificate-on-linux). Without a trusted certificate the backend can still be run over HTTP with `--launch-profile http`.
+
+On the first start the backend creates the SQLite database `data-base/market.db` and downloads the whole history from Binance (about 1600 candles per pair, a few seconds). Until then `/api/candles` answers `503` with the code `data-not-available`. Afterwards the data is refreshed in the background once a day after midnight UTC. To start from scratch, stop the backend and delete `data-base/`.
 
 ### API endpoints
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/health` | health check, returns `Healthy` |
-| `GET /api/candles?symbol=BNBUSDT&from=2026-10-01&to=2026-10-31` | closed daily candles for the given UTC days (inclusive); `symbol` is one of `Market:Symbols`, `from` not earlier than `Market:AnalysisStartDate` minus `Market:WarmupDays` (2022-06-15). Served from local storage; missing days are fetched from Binance on demand |
+| Endpoint                                                        | Description                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/health`                                               | health check, returns `Healthy`                                                                                                                                                                                                                                                                                  |
+| `GET /api/data-status`                                          | what data is stored and how fresh it is: last closed day, last synchronised day and time per pair, whether the data is up to date, pair status on Binance                                                                                                                                                        |
+| `GET /api/candles?symbol=BNBUSDT&from=2026-10-01&to=2026-10-31` | stored closed daily candles for the given UTC days (inclusive) and the days without a valid candle (`missingDays`); candles whose close changed by more than 50% are marked `flaggedForReview`. `symbol` is one of `Market:Symbols`, `from` not earlier than `earliestDate` (2022-06-15), `to` at most yesterday |
+
+Errors are returned as problem details (`application/problem+json`) with a stable `code` field for the frontend: `invalid-parameter`, `unsupported-symbol`, `invalid-date-range`, `date-before-earliest`, `date-not-closed` (400) and `data-not-available` (503).
 
 The API is described with OpenAPI, generated from the code and its XML comments. In the Development environment:
-- `http://localhost:5299/scalar` — interactive API reference (Scalar): endpoints, parameters, response schemas and a "try it" client,
-- `http://localhost:5299/openapi/v1.json` — the OpenAPI document itself.
+
+- `https://localhost:7134/scalar` — interactive API reference (Scalar): endpoints, parameters, response schemas and a "try it" client,
+- `https://localhost:7134/openapi/v1.json` — the OpenAPI document itself.
 
 Example requests are also in `src/backend/CryptoMarketAnalytics.Api/CryptoMarketAnalytics.Api.http` (VS Code REST Client, Visual Studio, Rider).
 
 ### Useful commands
 
-| Where          | Command                | What it does                                                                          |
-| -------------- | ---------------------- | ------------------------------------------------------------------------------------- |
-| root           | `dotnet build`         | build the solution                                                                    |
-| root           | `dotnet test`          | run backend tests                                                                     |
-| `src/frontend` | `npm run dev`          | dev server with hot reload                                                            |
-| `src/frontend` | `npm run test:unit`    | run the tests from `tests/frontend` in watch mode (`npx vitest run` for a single run) |
-| `src/frontend` | `npm run lint`         | Oxlint and ESLint with auto-fix (`src/frontend` and `tests/frontend`)                 |
-| `src/frontend` | `npm run format`       | format the frontend code and `tests/frontend` with Prettier                           |
-| `src/frontend` | `npm run check:lint`   | lint without auto-fix; fails on any error or warning (used by CI)                     |
-| `src/frontend` | `npm run check:format` | check formatting without changing files (used by CI)                                  |
-| `src/frontend` | `npm run build`        | type-check and production build to `dist/`                                            |
+| Where          | Command                                                                                                               | What it does                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| root           | `dotnet build`                                                                                                        | build the solution                                                                    |
+| root           | `dotnet test`                                                                                                         | run backend tests                                                                     |
+| root           | `dotnet ef migrations add <Name> --project src/backend/CryptoMarketAnalytics.Api --output-dir Persistence/Migrations` | add a database migration after changing the model                                     |
+| `src/frontend` | `npm run dev`                                                                                                         | dev server with hot reload                                                            |
+| `src/frontend` | `npm run test:unit`                                                                                                   | run the tests from `tests/frontend` in watch mode (`npx vitest run` for a single run) |
+| `src/frontend` | `npm run lint`                                                                                                        | Oxlint and ESLint with auto-fix (`src/frontend` and `tests/frontend`)                 |
+| `src/frontend` | `npm run format`                                                                                                      | format the frontend code and `tests/frontend` with Prettier                           |
+| `src/frontend` | `npm run check:lint`                                                                                                  | lint without auto-fix; fails on any error or warning (used by CI)                     |
+| `src/frontend` | `npm run check:format`                                                                                                | check formatting without changing files (used by CI)                                  |
+| `src/frontend` | `npm run build`                                                                                                       | type-check and production build to `dist/`                                            |
 
 ## 8. Configuration
 
 - Application settings: `appsettings.json` and `appsettings.Development.json`.
-- Analysed pairs and period are in the `Market` section of `appsettings.json`: `Symbols` (`BNBUSDT`, `BTCUSDT`), `AnalysisStartDate` (`2023-01-01`) and `WarmupDays` (`200`, data before the start needed by rolling indicators).
+- Analysed pairs and period are in the `Market` section of `appsettings.json`: `Symbols` (`BNBUSDT`, `BTCUSDT`), `AnalysisStartDate` (`2023-01-01`), `WarmupDays` (`200`, data before the start needed by rolling indicators) and `LargePriceChangeThreshold` (`0.5`, daily change flagged for manual review).
 - Binance API settings are in the `Binance` section: `BaseUrl` (`https://data-api.binance.vision`), optional `FallbackBaseUrl` used when the primary server fails (`https://api.binance.com`), `Timeout` and `UserAgent`.
-- Both sections are validated at startup: a missing or invalid value stops the application with an error naming the setting.
+- `Storage:DatabasePath` is the SQLite file, relative to the project directory (`../../../data-base/market.db`, i.e. `data-base/` in the repository root).
+- `Synchronization`: `Enabled` and `CheckInterval` (`00:15:00`) — how often the backend checks whether yesterday's candle is stored; Binance is called only when it is not.
+- All sections are validated at startup: a missing or invalid value stops the application with an error naming the setting.
 - The Binance market data API is public, so **no API key is needed** to run the application at the start.
 - If secrets are added later, they are **never committed to the repository**.
   The required values will be listed in `.env.example` _(planned)_; copy it to `.env` and fill in your own values.
