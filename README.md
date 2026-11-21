@@ -1,6 +1,6 @@
 # crypto-market-analytics
 
-A web application that fetches daily BNB/USDT market data from the public Binance API, runs statistical analysis on it and presents the results as charts and summaries, using bitcoin (BTC/USDT) as the market benchmark. Built as part of the **Group Practical Project** (*Grupowy projekt praktyczny*) course.
+A web application that fetches daily BNB/USDT market data from the public Binance API, runs statistical analysis on it and presents the results as charts and summaries, using bitcoin (BTC/USDT) as the market benchmark. Built as part of the **Group Practical Project** (_Grupowy projekt praktyczny_) course.
 
 > **Status:** early stage — requirements and analysis methods are documented; the application skeleton (backend, frontend, tests) is in place, features are not implemented yet.
 > Items marked **[TBD]** have not been decided by the team yet. Items marked _(planned)_ do not exist in the repository yet.
@@ -27,12 +27,12 @@ A web application that fetches daily BNB/USDT market data from the public Binanc
 
 The project is carried out at the request of the course supervisor and is the basis for passing the course.
 
-
 ## 2. Goal and scope
 
 **Goal:** build an application that retrieves daily BNB/USDT candles from Binance, analyses how BNB behaves on its own and against the market (BTC/USDT), and presents the results to the user.
 
 **In scope:**
+
 - fetching daily OHLCV candles for `BNBUSDT` and `BTCUSDT` from the public Binance REST API (no account or API key) and storing them locally,
 - data validation and calculation of daily returns,
 - statistical analysis: descriptive statistics, volatility, drawdowns, return distribution, correlation and beta against BTC, event study around Binance-related events and volume analysis — see [`docs/analysis/metody-statystyczne.md`](docs/analysis/metody-statystyczne.md),
@@ -46,29 +46,27 @@ The project is carried out at the request of the course supervisor and is the ba
 
 ## 3. Team and responsibilities
 
-| Member | Area | Responsibilities |
-|---|---|---|
-| [@KubisB](https://github.com/KubisB) | Development | Backend; split with frontend |
-| [@maciekk707](https://github.com/maciekk707) | Development | Frontend; split with backend |
-| [@elkrix](https://github.com/elkrix) | Documentation and analysis | Project documentation, statistical analysis |
-| [@mmichalskii1](https://github.com/mmichalskii1) | Documentation and analysis | Project documentation, statistical analysis |
-| [@KusmierekKuba](https://github.com/KusmierekKuba) | QA | Test strategy, testing, quality verification |
-
+| Member                                             | Area                       | Responsibilities                             |
+| -------------------------------------------------- | -------------------------- | -------------------------------------------- |
+| [@KubisB](https://github.com/KubisB)               | Development                | Backend; split with frontend                 |
+| [@maciekk707](https://github.com/maciekk707)       | Development                | Frontend; split with backend                 |
+| [@elkrix](https://github.com/elkrix)               | Documentation and analysis | Project documentation, statistical analysis  |
+| [@mmichalskii1](https://github.com/mmichalskii1)   | Documentation and analysis | Project documentation, statistical analysis  |
+| [@KusmierekKuba](https://github.com/KusmierekKuba) | QA                         | Test strategy, testing, quality verification |
 
 ## 4. Tech stack
 
-| Layer | Technology | Status |
-|---|---|---|
-| Backend | C# / ASP.NET Core Web API (controllers, OpenAPI) on .NET 10 LTS (`net10.0`) | Decided |
-| Frontend | Vue 3 + TypeScript, Vite; ESLint, Oxlint and Prettier | Decided |
-| Data source | Binance public REST API (`https://data-api.binance.vision`, `GET /api/v3/klines`), daily candles, no API key | Decided |
-| Data storage | Local storage of downloaded candles; form (e.g. SQLite or files) _[TBD]_ | **[TBD]** |
-| Backend tests | xUnit, integration tests with `WebApplicationFactory` | Decided |
-| Frontend unit tests | Vitest, Vue Test Utils | Decided |
-| E2E tests | _[TBD]_ | **[TBD]** |
-| Data analysis and verification | Python, Jupyter notebooks (pandas, numpy, scipy, matplotlib) | Decided |
-| Version control | Git | |
-
+| Layer                          | Technology                                                                                                   | Status    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | --------- |
+| Backend                        | C# / ASP.NET Core Web API (controllers, OpenAPI) on .NET 10 LTS (`net10.0`)                                  | Decided   |
+| Frontend                       | Vue 3 + TypeScript, Vite; ESLint, Oxlint and Prettier                                                        | Decided   |
+| Data source                    | Binance public REST API (`https://data-api.binance.vision`, `GET /api/v3/klines`), daily candles, no API key | Decided   |
+| Data storage                   | Local storage of downloaded candles; form (e.g. SQLite or files) _[TBD]_                                     | **[TBD]** |
+| Backend tests                  | xUnit, integration tests with `WebApplicationFactory`                                                        | Decided   |
+| Frontend unit tests            | Vitest, Vue Test Utils                                                                                       | Decided   |
+| E2E tests                      | _[TBD]_                                                                                                      | **[TBD]** |
+| Data analysis and verification | Python, Jupyter notebooks (pandas, numpy, scipy, matplotlib)                                                 | Decided   |
+| Version control                | Git                                                                                                          |           |
 
 ## 5. Architecture overview
 
@@ -76,13 +74,14 @@ Daily candles for `BNBUSDT` and `BTCUSDT` are downloaded from the public Binance
 
 Details and technical decisions will be kept in `docs/architecture/` _(planned)_.
 
-
 ## 6. Repository structure
 
 Entries marked _(planned)_ do not exist yet.
 
 ```
 crypto-market-analytics/
+├── .github/
+│   └── workflows/ci.yml                   # CI: build, lint and tests on every push and pull request
 ├── .vscode/
 │   ├── extensions.json                    # recommended VS Code extensions
 │   └── settings.json                      # shared VS Code settings (format on save, ESLint for src/frontend)
@@ -112,7 +111,6 @@ crypto-market-analytics/
 ```
 
 All tests live in `tests/`, separate from the application code. The frontend tooling (Vitest, ESLint, Oxlint, Prettier) is configured in `src/frontend` and also covers `tests/frontend`; run it through the npm scripts in `src/frontend`.
-
 
 ## 7. Getting started
 
@@ -145,16 +143,17 @@ Check that the backend is running: `GET http://localhost:5299/api/health` return
 
 ### Useful commands
 
-| Where | Command | What it does |
-|---|---|---|
-| root | `dotnet build` | build the solution |
-| root | `dotnet test` | run backend tests |
-| `src/frontend` | `npm run dev` | dev server with hot reload |
-| `src/frontend` | `npm run test:unit` | run the tests from `tests/frontend` in watch mode (`npx vitest run` for a single run) |
-| `src/frontend` | `npm run lint` | Oxlint and ESLint with auto-fix (`src/frontend` and `tests/frontend`) |
-| `src/frontend` | `npm run format` | format the frontend code and `tests/frontend` with Prettier |
-| `src/frontend` | `npm run build` | type-check and production build to `dist/` |
-
+| Where          | Command                | What it does                                                                          |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| root           | `dotnet build`         | build the solution                                                                    |
+| root           | `dotnet test`          | run backend tests                                                                     |
+| `src/frontend` | `npm run dev`          | dev server with hot reload                                                            |
+| `src/frontend` | `npm run test:unit`    | run the tests from `tests/frontend` in watch mode (`npx vitest run` for a single run) |
+| `src/frontend` | `npm run lint`         | Oxlint and ESLint with auto-fix (`src/frontend` and `tests/frontend`)                 |
+| `src/frontend` | `npm run format`       | format the frontend code and `tests/frontend` with Prettier                           |
+| `src/frontend` | `npm run check:lint`   | lint without auto-fix; fails on any error or warning (used by CI)                     |
+| `src/frontend` | `npm run check:format` | check formatting without changing files (used by CI)                                  |
+| `src/frontend` | `npm run build`        | type-check and production build to `dist/`                                            |
 
 ## 8. Configuration
 
@@ -164,18 +163,16 @@ Check that the backend is running: `GET http://localhost:5299/api/health` return
   The required values will be listed in `.env.example` _(planned)_; copy it to `.env` and fill in your own values.
 - `.env` and any other secrets are excluded in `.gitignore`.
 
-
 ## 9. Documentation
 
 Project documentation lives in `docs/` and is written in Polish.
 
-| Document | Location |
-|---|---|
+| Document                                          | Location                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Requirements and scope, data source (Binance API) | [`docs/requirements/wymagania-i-zakres.md`](docs/requirements/wymagania-i-zakres.md) |
-| Statistical methods, formulas and test data | [`docs/analysis/metody-statystyczne.md`](docs/analysis/metody-statystyczne.md) |
-| Choice of trading pairs | [`docs/analysis/wybor-par-walutowych.md`](docs/analysis/wybor-par-walutowych.md) |
-| Architecture | `docs/architecture/` _(planned)_ |
-
+| Statistical methods, formulas and test data       | [`docs/analysis/metody-statystyczne.md`](docs/analysis/metody-statystyczne.md)       |
+| Choice of trading pairs                           | [`docs/analysis/wybor-par-walutowych.md`](docs/analysis/wybor-par-walutowych.md)     |
+| Architecture                                      | `docs/architecture/` _(planned)_                                                     |
 
 ## 10. AI usage policy
 
@@ -184,6 +181,7 @@ and documentation process. Shared instructions for AI tools live in
 [`AGENTS.md`](AGENTS.md).
 
 Ground rules:
+
 - AI output is a draft. The author of a change is responsible for reviewing,
   understanding and testing it before opening a pull request.
 - Statistical results and conclusions are verified by a human against the
@@ -191,15 +189,15 @@ Ground rules:
 - No secrets (API keys, `.env` contents) are ever pasted into AI tools.
 - Code review applies equally to AI-assisted and hand-written changes.
 
-
 ## 11. Contributing
 
 - Every change goes through a pull request; nobody pushes directly to `main`.
 - One branch = one logical change = one pull request. Keep pull requests small.
-- **Branch names:** `<type>/<short-description>`, in English, lowercase, words separated by hyphens, describing *what* changes (not *where*). Examples: `feat/binance-klines-client`, `fix/drawdown-start-date`, `docs/event-study-method`.
+- **Branch names:** `<type>/<short-description>`, in English, lowercase, words separated by hyphens, describing _what_ changes (not _where_). Examples: `feat/binance-klines-client`, `fix/drawdown-start-date`, `docs/event-study-method`.
 - **Commit messages:** [Conventional Commits](https://www.conventionalcommits.org/), imperative mood, e.g. `feat: add Binance klines client`, `fix: exclude unclosed candle`.
 - **Types** (for both branches and commits): `feat` (new functionality), `fix` (bug fix), `docs` (documentation), `test` (tests only), `refactor` (no behaviour change), `chore` (setup, dependencies, configuration), `ci` (pipelines).
-- Before opening a pull request: `dotnet build`, `dotnet test`, and in `src/frontend` `npm run lint`, `npx vitest run` and `npm run build` must pass.
+- Before opening a pull request: `dotnet build`, `dotnet test`, and in `src/frontend` `npm run check:lint`, `npm run check:format`, `npx vitest run` and `npm run build` must pass.
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) runs the same checks for the backend and the frontend on every push and on every pull request to `main`. A pull request is merged only when CI is green.
 - Code, comments, commit messages and this README are in English; documentation in `docs/` is in Polish.
 
 ---

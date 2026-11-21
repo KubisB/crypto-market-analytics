@@ -13,7 +13,9 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "cd ../.. && oxlint -c src/frontend/.oxlintrc.json --fix src/frontend tests/frontend",
     "lint:eslint": "cd ../.. && eslint -c src/frontend/eslint.config.ts --fix --cache --cache-location src/frontend/.eslintcache src/frontend tests/frontend",
-    "format": "cd ../.. && prettier --write --experimental-cli src/frontend/src tests/frontend"
+    "format": "cd ../.. && prettier --write --experimental-cli src/frontend/src tests/frontend",
+    "check:lint": "cd ../.. && oxlint -c src/frontend/.oxlintrc.json --deny-warnings src/frontend tests/frontend && eslint -c src/frontend/eslint.config.ts --max-warnings 0 src/frontend tests/frontend",
+    "check:format": "cd ../.. && prettier --check --experimental-cli src/frontend/src tests/frontend"
   },
   "dependencies": {
     "vue": "^3.5.42"
