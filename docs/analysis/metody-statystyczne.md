@@ -152,7 +152,7 @@ Analiza zdarzeń sprawdza, czy przy ważnych wydarzeniach cena BNB zachowywała 
 - 29.05.2025: SEC umarza sprawę przeciw Binance,
 - 23.10.2025: prezydent USA ułaskawia Changpenga Zhao.
 
-Część wydarzeń była wcześniej znana albo zapowiadana: termin wyjścia na wolność wynikał z wyroku, wstrzymanie sprawy SEC ogłoszono w lutym 2025, a o możliwym ułaskawieniu media pisały od wiosny 2025. Analiza zdarzeń mierzy reakcję na nową informację, więc przy takich wydarzeniach brak reakcji jest oczekiwany i nie oznacza, że wydarzenie było nieważne.
+Część wydarzeń była wcześniej znana albo zapowiadana: termin wyjścia na wolność wynikał z wyroku, wstrzymanie sprawy SEC ogłoszono w lutym 2025, a o możliwym ułaskawieniu media pisały od wiosny 2025. Analiza zdarzeń mierzy reakcję na nową informację, więc przy takich wydarzeniach brak statystycznie istotnego odchylenia od modelu jest oczekiwany i nie oznacza, że wydarzenie było nieważne.
 
 Procedura:
 1. Na dniach od −120 do −11 przed wydarzeniem szacowana jest regresja $R_t = \alpha + \beta M_t + \varepsilon_t$. Przerwa przed wydarzeniem ogranicza wpływ przecieków informacji. Z okna estymacji wyłączane są dni bez wspólnych poprawnych zwrotów BNB i BTC, dni z okien od −5 do +5 innych wydarzeń z listy, np. pozew CFTC wypada w oknie estymacji pozwu SEC, oraz dni oznaczone przy walidacji jako zmiana ceny powyżej 50%. $L$ to faktyczna liczba dni użytych w estymacji, najwyżej 110. Model wymaga $L \ge 3$ i niezerowej wariancji zwrotów BTC, a przy $L < 30$ wynik jest oznaczany jako oparty na krótkiej próbie. Dla wydarzeń z początku 2023 roku okno sięga do danych z 2022 roku, pobieranych do rozgrzania wskaźników.
@@ -166,7 +166,7 @@ Procedura:
    $$
 
    gdzie $T$ to liczba dni okna wydarzenia, $s_\varepsilon$ to odchylenie reszt z kroku 1 z dzielnikiem $L-2$, $\bar{M}_{\text{est}}$ to średni zwrot BTC w oknie estymacji, a $S_{xx} = \sum_{\text{est}} (M_t - \bar{M}_{\text{est}})^2$. Dwustronna wartość $p$ pochodzi z rozkładu t z $L-2$ stopniami swobody. 7 wydarzeń i 2 okna dają 14 zaplanowanych testów, dlatego wartości $p$ są korygowane metodą Holma, a reakcja jest istotna, gdy skorygowana wartość $p$ jest mniejsza niż 0,05. Test bez wyniku pozostaje pusty, ale wlicza się do liczby testów. Metoda opiera się na modelu rynkowym i błędzie prognozy opisanych przez [MacKinlaya](https://www.bu.edu/econ/files/2011/01/MacKinlay-1996-Event-Studies-in-Economics-and-Finance.pdf).
-5. Kontrolnie CAR jest liczony też z $\alpha = 0$, czyli $AR_t = R_t - \hat{\beta} M_t$, z $\hat{\beta}$ z tej samej regresji. Stała $\hat{\alpha}$ przenosi do okna wydarzenia trend z okresu estymacji. Gdy BNB w tym okresie mocno rósł niezależnie od rynku, $\hat{\alpha}$ jest wysokie, a zwroty nadzwyczajne wychodzą sztucznie ujemne. Wyraźna różnica między wariantami jest opisywana przy wyniku.
+5. Kontrolnie CAR jest liczony też z $\alpha = 0$, czyli $AR_t = R_t - \hat{\beta} M_t$, z $\hat{\beta}$ z tej samej regresji. Stała $\hat{\alpha}$ przenosi do okna wydarzenia trend z okresu estymacji. Gdy BNB w tym okresie mocno rósł niezależnie od rynku, $\hat{\alpha}$ jest wysokie i obniża CAR względem wariantu z alfą równą zero. Wyraźna różnica między wariantami jest opisywana przy wyniku.
 
 Wyraźnie ujemny CAR oznacza, że BNB spadł mocniej, niż wynikałoby z ruchu BTC, czyli reakcję specyficzną dla Binance. Ograniczenia:
 - to pojedyncze wydarzenia, więc wnioski są opisowe,
@@ -184,6 +184,8 @@ V^{\text{wzgl}}_t = \ln\frac{V_t}{\frac{1}{30}\sum_{i=1}^{30} V_{t-i}}
 $$
 
 czyli logarytm obrotu danego dnia na tle średniej z 30 poprzednich dni. Logarytm ogranicza wpływ dni z ogromnym obrotem. Badana jest korelacja między wielkością ruchu ceny $|R_t|$ a $V^{\text{wzgl}}_t$, liczona metodą Pearsona i kontrolnie Spearmana. Oczekiwany jest związek dodatni.
+
+Średnia obejmuje 30 poprzednich dni kalendarzowych i wymaga dodatniego obrotu w każdym z nich. Dzień z zerowym lub brakującym obrotem nie ma wolumenu względnego, a ponieważ wypada też ze średniej, kolejne 30 dni również pozostaje bez wartości. Wolumen względny pierwszych dni okresu korzysta z obrotu sprzed okresu, pobieranego do rozgrzania wskaźników, ale do korelacji wchodzą tylko dni, których zwrot $R_t$ jest liczony wewnątrz wybranego okresu. Przy mniej niż 90 takich dniach wynik ma ostrzeżenie.
 
 ## 11. Dane testowe
 
@@ -214,6 +216,19 @@ Ceny z kolejnych dni kalendarzowych od 1 stycznia, chyba że podano inaczej:
 - stała cena, pięć razy 100: średnia 0, odchylenie 0, odsetek dni wzrostowych pusty, bo nie ma dni ze zmianą ceny, skośność i kurtoza puste, maksymalne obsunięcie 0,
 - powtórzony szczyt, ceny 100, 100, 90, 100: maksymalne obsunięcie −0,10, szczyt 2 stycznia, dołek 3 stycznia, 1 dzień spadku, powrót 4 stycznia,
 - pusta próba i jedna cena: wszystkie miary puste z przyczyną, bez błędu programu.
+
+### 11.4. Analiza wydarzeń, korekta Holma i wolumen względny
+
+Analiza wydarzenia na zwrotach logarytmicznych wpisanych wprost, z krótkim oknem estymacji, żeby przykład dało się policzyć ręcznie:
+- okno estymacji, 5 dni: BTC 0,01; −0,02; 0,03; −0,01; 0,02, BNB 0,02; −0,03; 0,05; −0,01; 0,03,
+- okno wydarzenia od −1 do +1, 3 dni: BTC 0,01; −0,02; 0, BNB −0,01; −0,08; 0,01,
+- wyniki: $\hat{\alpha}$ 0,0027906977, $\hat{\beta}$ 1,5348837209, $s_\varepsilon$ 0,0030499714, CAR −0,0730232558, CAR przy $\alpha = 0$ −0,0646511628, $SE(CAR)$ 0,0069922309, $t$ −10,4434846522, dwustronna wartość $p$ przy 3 stopniach swobody 0,0018740542,
+- zwrot prosty w oknie: BNB −0,0768836536, BTC −0,0099501663,
+- gdy w oknie wydarzenia brakuje jednego dnia, CAR i test są puste.
+
+Korekta Holma dla czterech zaplanowanych testów o wartościach $p$ 0,01; brak; 0,04; 0,02 daje 0,04; brak; 0,08; 0,06. Test bez wyniku wlicza się do liczby testów.
+
+Wolumen względny dla przykładu z oknem 3 dni zamiast 30: obroty 100, 200, 300, 400 dają ostatniego dnia $\ln(400/200) = 0{,}6931471806$. Gdy obrót ostatniego dnia wynosi 0, wartość jest pusta.
 
 ## 12. Weryfikacja wyników
 

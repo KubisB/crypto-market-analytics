@@ -32,6 +32,8 @@ RELIABLE_VOLATILITY = 30
 RELIABLE_SHAPE = 365
 RELIABLE_HISTOGRAM = 30
 RELIABLE_MARKET = 30
+RELIABLE_EVENT_ESTIMATION = 30
+RELIABLE_VOLUME = 90
 
 NAN = math.nan
 
@@ -361,3 +363,178 @@ def rolling_correlation(asset_prices: pd.Series, market_prices: pd.Series, windo
     asset, market = asset_log.reindex(calendar), market_log.reindex(calendar)
     result = asset.rolling(window, min_periods=window).corr(market)
     return result.where(np.isfinite(result))
+
+
+# ---------- event study (chapter 9.3) ----------
+
+def holm_adjust(p_values: list[float]) -> list[float]:
+    """Holm step-down adjustment across all planned tests (NaN stays NaN, still counted in M)."""
+    m = len(p_values)
+    adjusted = [NAN] * m
+    valid = sorted((p, i) for i, p in enumerate(p_values) if p is not None and math.isfinite(p))
+    running_max = 0.0
+    for rank, (p, idx) in enumerate(valid):
+        scaled = min(1.0, (m - rank) * p)
+        running_max = max(running_max, scaled)
+        adjusted[idx] = running_max
+    return adjusted
+
+
+def event_study(
+    asset_prices: pd.Series,
+    market_prices: pd.Series,
+    event_day,
+    excluded_dates=None,
+    win_before: int = 1,
+    win_after: int = 1,
+    est_before: int = 120,
+    est_after: int = 11,
+) -> dict:
+    """Market-model event study with MacKinlay forecast-error SE(CAR)."""
+    asset_clean = valid_prices(asset_prices)
+    market_clean = valid_prices(market_prices)
+    asset_log = returns(asset_clean, "log")
+    market_log = returns(market_clean, "log")
+    common_ret = asset_log.index.intersection(market_log.index).sort_values()
+
+    event_ts = pd.Timestamp(event_day)
+    if event_ts.tzinfo is not None:
+        event_ts = event_ts.tz_convert("UTC").tz_localize(None)
+    event_ts = event_ts.normalize()
+
+    excluded = {pd.Timestamp(d).tz_localize(None).normalize() if pd.Timestamp(d).tzinfo is None
+                else pd.Timestamp(d).tz_convert("UTC").tz_localize(None).normalize()
+                for d in (excluded_dates or ())}
+
+    est_start = event_ts - pd.Timedelta(days=est_before)
+    est_end = event_ts - pd.Timedelta(days=est_after)
+    est_idx = common_ret[(common_ret >= est_start) & (common_ret <= est_end) & (~common_ret.isin(excluded))]
+    n_est = len(est_idx)
+
+    result = {
+        "event_date": event_ts.date(),
+        "window": f"[{ -win_before }, +{ win_after }]",
+        "estimation_days": n_est,
+        "alpha": NAN, "beta": NAN, "s_eps": NAN,
+        "asset_return": NAN, "market_return": NAN,
+        "car": NAN, "car_alpha0": NAN, "se_car": NAN, "t": NAN, "p_value": NAN,
+        "reason": None, "warning": None,
+    }
+    if n_est < 3:
+        result["reason"] = _not_enough("3 dni w oknie estymacji", str(n_est))
+        return result
+
+    m_est = market_log.loc[est_idx].to_numpy(dtype=float)
+    r_est = asset_log.loc[est_idx].to_numpy(dtype=float)
+    m_mean = float(m_est.mean())
+    s_xx = float(np.sum((m_est - m_mean) ** 2))
+    if s_xx == 0:
+        result["reason"] = "wartość nieokreślona: zwroty BTC w oknie estymacji się nie zmieniały"
+        return result
+
+    beta = float(np.sum((m_est - m_mean) * (r_est - r_est.mean())) / s_xx)
+    alpha = float(r_est.mean() - beta * m_mean)
+    resid = r_est - (alpha + beta * m_est)
+    s_eps = float(math.sqrt(np.sum(resid ** 2) / (n_est - 2)))
+    result.update(alpha=alpha, beta=beta, s_eps=s_eps, warning=_unreliable(RELIABLE_EVENT_ESTIMATION, n_est))
+
+    ev_idx = pd.date_range(event_ts - pd.Timedelta(days=win_before), event_ts + pd.Timedelta(days=win_after), freq="D")
+    if not ev_idx.isin(common_ret).all():
+        missing = int((~ev_idx.isin(common_ret)).sum())
+        result["reason"] = f"brak pełnych danych w oknie wydarzenia, brakuje {_returns_text(missing)}"
+        return result
+
+    t_len = len(ev_idx)
+    r_ev = asset_log.loc[ev_idx].to_numpy(dtype=float)
+    m_ev = market_log.loc[ev_idx].to_numpy(dtype=float)
+    car = float(np.sum(r_ev - (alpha + beta * m_ev)))
+    car_alpha0 = float(np.sum(r_ev - beta * m_ev))
+
+    pre_day = event_ts - pd.Timedelta(days=win_before + 1)
+    end_day = event_ts + pd.Timedelta(days=win_after)
+    if pre_day in asset_clean.index and end_day in asset_clean.index:
+        result["asset_return"] = float(asset_clean.loc[end_day] / asset_clean.loc[pre_day] - 1)
+    if pre_day in market_clean.index and end_day in market_clean.index:
+        result["market_return"] = float(market_clean.loc[end_day] / market_clean.loc[pre_day] - 1)
+
+    se_car = float(s_eps * math.sqrt(t_len + (t_len ** 2) / n_est + ((float(m_ev.sum()) - t_len * m_mean) ** 2) / s_xx))
+    result.update(car=car, car_alpha0=car_alpha0, se_car=se_car)
+    if se_car > 0:
+        t_stat = car / se_car
+        p_val = float(2.0 * stats.t.sf(abs(t_stat), df=n_est - 2))
+        result.update(t=t_stat, p_value=p_val)
+    else:
+        result["reason"] = "zerowy błąd standardowy reszt w oknie estymacji"
+    return result
+
+
+def events_summary(
+    asset_prices: pd.Series,
+    market_prices: pd.Series,
+    events: list[tuple[str, str]],
+    outlier_dates=None,
+    windows: tuple[tuple[int, int], ...] = ((1, 1), (5, 5)),
+) -> pd.DataFrame:
+    """Evaluate all events across planned windows and apply Holm correction."""
+    excluded = set(outlier_dates or ())
+    for event_day, _ in events:
+        ts = pd.Timestamp(event_day).normalize()
+        for offset in range(-5, 6):
+            excluded.add(ts + pd.Timedelta(days=offset))
+
+    rows = []
+    for event_day, label in events:
+        for before, after in windows:
+            res = event_study(asset_prices, market_prices, event_day, excluded, win_before=before, win_after=after)
+            res["label"] = label
+            rows.append(res)
+
+    adjusted = holm_adjust([row["p_value"] for row in rows])
+    for row, p_adj in zip(rows, adjusted):
+        row["p_holm"] = p_adj
+        if math.isfinite(p_adj):
+            row["significant"] = "istotna" if p_adj < 0.05 else "nieistotna"
+        else:
+            row["significant"] = "brak wyniku"
+    return pd.DataFrame(rows)
+
+
+# ---------- volume analysis (chapter 10) ----------
+
+def relative_volume(quote_volume: pd.Series, window: int = 30) -> pd.Series:
+    """Logarithm of daily quote volume relative to the mean of the preceding `window` calendar days."""
+    values = pd.to_numeric(quote_volume, errors="coerce").astype(float).sort_index()
+    values = values[np.isfinite(values) & (values > 0)]
+    if values.empty:
+        return values
+    calendar = values.reindex(pd.date_range(values.index.min(), values.index.max(), freq="D"))
+    prior_mean = calendar.shift(1).rolling(window, min_periods=window).mean()
+    ratio = calendar / prior_mean
+    result = np.log(ratio.where(ratio > 0))
+    return result.reindex(quote_volume.index)
+
+
+def volume_relation(prices: pd.Series, quote_volume: pd.Series, window: int = 30) -> dict:
+    """Pearson and Spearman correlation between |log_return| and relative log volume."""
+    abs_ret = returns(prices, "log").abs().rename("abs_ret")
+    rel_vol = relative_volume(quote_volume, window=window).rename("rel_vol")
+    joined = pd.concat([abs_ret, rel_vol], axis=1, join="inner")
+    joined = joined.apply(pd.to_numeric, errors="coerce").astype(float)
+    joined = joined[np.isfinite(joined).all(axis=1)]
+    n = len(joined)
+    result = {"observations": n, "pearson": NAN, "pearson_p": NAN,
+              "spearman": NAN, "spearman_p": NAN, "reason": None, "warning": None}
+    if n < MIN_RETURNS:
+        result["reason"] = _not_enough(_returns_text(MIN_RETURNS), str(n))
+        return result
+    result["warning"] = _unreliable(RELIABLE_VOLUME, n)
+    if joined["abs_ret"].var(ddof=1) == 0 or joined["rel_vol"].var(ddof=1) == 0:
+        result["reason"] = ZERO_VARIANCE
+        return result
+    p_res = stats.pearsonr(joined["abs_ret"], joined["rel_vol"])
+    s_res = stats.spearmanr(joined["abs_ret"], joined["rel_vol"])
+    result.update(
+        pearson=float(p_res.statistic), pearson_p=float(p_res.pvalue),
+        spearman=float(s_res.statistic), spearman_p=float(s_res.pvalue),
+    )
+    return result
