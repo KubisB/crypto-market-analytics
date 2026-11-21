@@ -4,6 +4,14 @@
 
 Katalog zawiera notebooki Jupyter służące do analizy notowań pary BNB/USDT oraz do kontrolnego przeliczania wyników uzyskiwanych w aplikacji. Wzory i obowiązujące warianty obliczeń określa dokument [`metody-statystyczne.md`](../metody-statystyczne.md), a dane testowe zawiera jego rozdział 11.
 
+Zawartość katalogu:
+- `01-data-download.ipynb`: pobranie dziennych świec BNBUSDT i BTCUSDT od 2023 roku, z 200 dniami wcześniejszymi, oraz walidacja danych,
+- `02-descriptive-stats.ipynb`: statystyki opisowe, zmienność, średnie kroczące, obsunięcia, skośność, kurtoza, histogram, korelacja i beta dla okresu od 2023 roku oraz dla okresu kontrolnego, czyli roku 2024; wyniki dla roku 2024 służą do porównania z aplikacją,
+- `03-test-data-check.ipynb`: sprawdzenie, że dane testowe z rozdziału 11 dokumentu metod są poprawne, łącznie z przypadkami szczególnymi, oraz uruchomienie testów automatycznych,
+- `binance_data.py`: wspólny kod pobierania i walidacji danych,
+- `stats_methods.py`: wspólny kod obliczeń, zgodny z wariantami z dokumentu metod,
+- `test_stats_methods.py`: testy obu modułów na danych syntetycznych, bez połączenia z API: luka, zerowy zwrot, brakujące i nieskończone wartości, stała cena, pusta próba i błędne świece.
+
 ## 2. Wymagania
 
 - Python w wersji 3.12 lub nowszej.
@@ -38,6 +46,12 @@ jupyter lab docs/analysis/notebooks
 ```
 
 Notebooki można również otwierać w VS Code. Jako kernel należy wówczas wskazać interpreter ze środowiska `.venv`.
+
+Testy obliczeń korzystają tylko z biblioteki standardowej `unittest` i uruchamia się je w tym katalogu poleceniem:
+
+```bash
+python -m unittest -v test_stats_methods
+```
 
 ## 5. Zasady pracy
 
