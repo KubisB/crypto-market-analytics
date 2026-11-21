@@ -20,6 +20,9 @@ __pycache__/
 .venv/
 .ipynb_checkpoints/
 
+# Local SQLite database with downloaded market data (Storage:DatabasePath)
+/data-base/
+
 # Secrets — only .env.example is committed
 .env
 .env.*

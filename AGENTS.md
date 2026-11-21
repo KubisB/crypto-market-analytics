@@ -15,16 +15,20 @@ Documentation in `docs/` is written in Polish; code, comments, commit messages a
 
 - `src/backend/CryptoMarketAnalytics.Api` — ASP.NET Core Web API, .NET 10 (`net10.0`), controllers
   - `Controllers/` — HTTP only: parameters, status codes, mapping to DTOs
-  - `Dtos/` — objects returned by the API (`DailyCandleDto`); never return domain or Binance models directly
-  - `Domain/` — the project's own models (`DailyCandle`), independent of Binance
-  - `Services/` — business logic (`DailyCandleService`: allowed symbols, date range, reading from the repository)
-  - `Repositories/` — local storage of candles (`IDailyCandleRepository`; in-memory until the storage is decided)
-  - `Configuration/` — application settings (`MarketOptions`, section `Market`)
+  - `Dtos/` — objects returned by the API (`CandleRangeDto`, `DataStatusDto`, `ApiProblemDetails`); never return domain or Binance models directly
+  - `Domain/` — the project's own models (`DailyCandle`, `CandleRange`, `SymbolSyncState`) and rules on them (`LargePriceChange`), independent of Binance
+  - `Services/` — business logic behind the endpoints (`DailyCandleService`: allowed symbols, date range, completeness; `DataStatusService`); error codes in `ErrorCodes`
+  - `Validation/` — `DailyCandleValidator`: rejects invalid candles before they are stored
+  - `Synchronization/` — `DailyCandleSynchronizer` (downloads missing days from Binance) and the background service that runs it
+  - `Repositories/` — local storage of candles and sync state (`IDailyCandleRepository`, `ISyncStateRepository`, SQLite implementations)
+  - `Persistence/` — EF Core `MarketDbContext`, table records and `Migrations/`; the database file is `data-base/market.db` in the repository root (not committed)
+  - `Configuration/` — application settings (`MarketOptions`, `StorageOptions`, `SynchronizationOptions`)
   - `Binance/` — the public Binance API, split by role: `Client/`, `Configuration/` (`BinanceOptions`), `Models/` (responses as Binance describes them), `Mapping/` (Binance models → domain), `Exceptions/`
 - `src/frontend` — Vue 3 + TypeScript + Vite
-- `tests/backend/CryptoMarketAnalytics.Api.Tests` — xUnit, integration tests via `WebApplicationFactory`
+- `tests/backend/CryptoMarketAnalytics.Api.Tests` — xUnit; developers write basic unit tests, full and integration test suites are written by the testing team; integration tests run with a temporary SQLite database and `Synchronization:Enabled=false`
 - `tests/frontend` — Vitest unit tests for the frontend; TypeScript settings in `tests/frontend/tsconfig.json`, other tooling configured in `src/frontend` (`vitest.config.ts`, `eslint.config.ts`), run via its npm scripts
 - `CryptoMarketAnalytics.slnx` — .NET solution
+- `dotnet-tools.json` — local .NET tools (`dotnet-ef`); run `dotnet tool restore` once
 - `docs/analysis/notebooks` — Jupyter notebooks (Python 3.12+) for analysis and reference calculations; dependencies pinned in `requirements.txt`, setup in its `README.md`
 
 ## Commands
@@ -32,7 +36,8 @@ Documentation in `docs/` is written in Polish; code, comments, commit messages a
 Run the app in two terminals from the repository root:
 
 ```bash
-# Terminal 1 — backend on http://localhost:5299
+# Terminal 1 — backend on https://localhost:7134 (and http://localhost:5299)
+dotnet dev-certs https --trust   # once per machine
 dotnet run --project src/backend/CryptoMarketAnalytics.Api
 
 # Terminal 2 — frontend dev server on http://localhost:5173, proxies /api to the backend
@@ -40,13 +45,14 @@ npm install --prefix src/frontend
 npm run dev --prefix src/frontend
 ```
 
-Check: `GET http://localhost:5299/api/health` returns `Healthy`. The frontend calls the API with relative URLs (`fetch('/api/...')`).
+Check: `GET https://localhost:7134/api/health` returns `Healthy`. On the first start the backend creates `data-base/market.db` and downloads the history from Binance; until then `/api/candles` returns 503 `data-not-available`. The frontend calls the API with relative URLs (`fetch('/api/...')`).
 
 Build, test and lint:
 
 ```bash
 dotnet build
 dotnet test
+dotnet ef migrations add <Name> --project src/backend/CryptoMarketAnalytics.Api --output-dir Persistence/Migrations
 
 cd src/frontend
 npm run test:unit   # watch mode; `npx vitest run` for a single run
@@ -67,7 +73,10 @@ npm run build
 - Statistical calculations must follow the variant defined in `docs/analysis/metody-statystyczne.md` (e.g. n−1 divisor, √365 annualisation, log vs simple returns). Use its test data (chapter 11) in unit tests.
 - Notebooks: keep dependency versions pinned in `docs/analysis/notebooks/requirements.txt`; do not commit downloaded market data; run a notebook top to bottom before committing it.
 - Never add API keys or other secrets to the repository. The Binance market data API needs no key.
-- Tests must not call the real Binance API; use a fake `HttpMessageHandler` (see `tests/backend/.../Binance/`) or a stub `IBinanceClient`.
+- Tests must not call the real Binance API or use `data-base/`; use a fake `HttpMessageHandler` (see `tests/backend/.../Binance/`) or a stub `IBinanceClient`.
+- Endpoints read only from the local database; Binance is called only by `Synchronization/`.
+- Database schema changes go through an EF Core migration, never by editing or deleting the database by hand.
+- Error responses are `ApiProblemDetails` with a `code` from `ErrorCodes`; codes are an API contract for the frontend and must not be renamed.
 - Parse numbers from external APIs with `CultureInfo.InvariantCulture`; the team works on machines with Polish locale (decimal comma).
 - Keep changes small and focused; one branch = one logical change = one pull request.
 - Branch names: `<type>/<short-description>` in English kebab-case, e.g. `feat/binance-klines-client`.

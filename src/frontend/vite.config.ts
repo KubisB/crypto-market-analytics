@@ -16,9 +16,13 @@ export default defineConfig({
     },
   },
   server: {
-    // In development, forward API calls to the backend (http profile in launchSettings.json).
+    // In development, forward API calls to the backend (https profile in launchSettings.json).
+    // `secure: false` accepts the ASP.NET Core development certificate.
     proxy: {
-      '/api': 'http://localhost:5299',
+      '/api': {
+        target: 'https://localhost:7134',
+        secure: false,
+      },
     },
   },
 })

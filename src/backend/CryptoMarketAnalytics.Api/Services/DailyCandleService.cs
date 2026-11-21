@@ -1,4 +1,3 @@
-using CryptoMarketAnalytics.Api.Binance.Client;
 using CryptoMarketAnalytics.Api.Configuration;
 using CryptoMarketAnalytics.Api.Domain;
 using CryptoMarketAnalytics.Api.Repositories;
@@ -7,49 +6,62 @@ using Microsoft.Extensions.Options;
 namespace CryptoMarketAnalytics.Api.Services;
 
 public class DailyCandleService(
-    IDailyCandleRepository repository,
-    IBinanceClient binanceClient,
+    IDailyCandleRepository candles,
+    ISyncStateRepository states,
     IOptions<MarketOptions> options,
     TimeProvider timeProvider) : IDailyCandleService
 {
-    public async Task<IReadOnlyList<DailyCandle>> GetAsync(string symbol, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    public async Task<CandleRange> GetAsync(string symbol, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
     {
         var settings = options.Value;
         var normalizedSymbol = symbol.Trim().ToUpperInvariant();
+        var yesterday = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime).AddDays(-1);
 
         if (!settings.Symbols.Contains(normalizedSymbol, StringComparer.OrdinalIgnoreCase))
         {
-            throw new InvalidCandleRequestException($"Unsupported symbol '{symbol}'. Supported symbols: {string.Join(", ", settings.Symbols)}.");
+            throw new InvalidCandleRequestException(ErrorCodes.UnsupportedSymbol,
+                $"Unsupported symbol '{symbol}'. Supported symbols: {string.Join(", ", settings.Symbols)}.");
         }
 
         if (from > to)
         {
-            throw new InvalidCandleRequestException("'from' must not be later than 'to'.");
+            throw new InvalidCandleRequestException(ErrorCodes.InvalidDateRange, "'from' must not be later than 'to'.");
         }
 
         if (from < settings.EarliestDate)
         {
-            throw new InvalidCandleRequestException($"'from' must not be earlier than {settings.EarliestDate:yyyy-MM-dd}.");
+            throw new InvalidCandleRequestException(ErrorCodes.DateBeforeEarliest,
+                $"'from' must not be earlier than {settings.EarliestDate:yyyy-MM-dd}.");
         }
 
-        var yesterday = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime).AddDays(-1);
-        var lastDay = to < yesterday ? to : yesterday;
-        if (from > lastDay)
+        if (to > yesterday)
         {
-            return [];
+            throw new InvalidCandleRequestException(ErrorCodes.DateNotClosed,
+                $"'to' must not be later than {yesterday:yyyy-MM-dd}, the last closed day; today's candle is not closed yet.");
         }
 
-        var stored = await repository.GetAsync(normalizedSymbol, from, lastDay, cancellationToken);
-        var expectedDays = lastDay.DayNumber - from.DayNumber + 1;
-        if (stored.Count == expectedDays)
+        var state = await states.GetAsync(normalizedSymbol, cancellationToken);
+        if (state?.LastDate is null)
         {
-            return stored;
+            throw new DataNotAvailableException(state?.LastError is { } error
+                ? $"No data of {normalizedSymbol} has been downloaded yet. Last attempt failed: {error}"
+                : $"No data of {normalizedSymbol} has been downloaded yet.");
         }
 
-        // Until the daily synchronisation exists, missing days are fetched from Binance on demand.
-        // Days that Binance itself does not have (gaps) are requested again on every call.
-        var fetched = await binanceClient.GetDailyCandlesAsync(normalizedSymbol, from, lastDay, cancellationToken);
-        await repository.SaveAsync(normalizedSymbol, fetched, cancellationToken);
-        return await repository.GetAsync(normalizedSymbol, from, lastDay, cancellationToken);
+        // The day before the range is read too, so that the first day can be compared with the previous close.
+        var stored = await candles.GetAsync(normalizedSymbol, from.AddDays(-1), to, cancellationToken);
+        var flagged = LargePriceChange.FindDates(stored, settings.LargePriceChangeThreshold);
+        var inRange = stored.Where(candle => candle.Date >= from).ToList();
+
+        // Completeness is checked for the whole requested range, its first and last day included (chapter 7).
+        // Days after the last synchronised day are missing as well; the data status says whether the data is up to date.
+        var storedDays = inRange.Select(candle => candle.Date).ToHashSet();
+        var missingDays = Enumerable.Range(from.DayNumber, to.DayNumber - from.DayNumber + 1)
+            .Select(DateOnly.FromDayNumber)
+            .Where(day => !storedDays.Contains(day))
+            .ToList();
+
+        return new CandleRange(normalizedSymbol, from, to, inRange, missingDays,
+            flagged.Where(day => day >= from).ToHashSet());
     }
 }
