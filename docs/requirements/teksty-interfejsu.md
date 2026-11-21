@@ -135,7 +135,7 @@ Wydarzenia wokół Binance:
 - opis „Istotność”: „Test uwzględnia, że sprawdzanych jest kilka wydarzeń naraz. Reakcja jest istotna, gdy przy założeniach modelu trudno ją przypisać zwykłym wahaniom rynku.”
 - opis „brak wyniku”: „Za mało danych w oknie wydarzenia lub w okresie przed nim.”
 - opis „Zwrot nadzwyczajny”: „Część zmiany ceny BNB w wybranym oknie, której nie wyjaśnia model z BTC, zsumowana w jednostkach zwrotu logarytmicznego.”
-- objaśnienie pod tabelą: „Wyniki nie zależą od wybranego okresu, ponieważ każde wydarzenie jest analizowane we własnym oknie czasowym. Dotyczą pojedynczych wydarzeń i mają charakter opisowy. Część wydarzeń była wcześniej zapowiadana, więc brak reakcji ceny nie oznacza, że wydarzenie było nieważne.”
+- objaśnienie pod tabelą: „Wyniki nie zależą od wybranego okresu, ponieważ każde wydarzenie jest analizowane we własnym oknie czasowym. Dotyczą pojedynczych wydarzeń i mają charakter opisowy. Część wydarzeń była wcześniej zapowiadana, więc brak statystycznie istotnej reakcji ceny nie oznacza, że wydarzenie było nieważne.”
 
 ## 8. Stany i komunikaty
 

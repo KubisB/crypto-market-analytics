@@ -2,7 +2,8 @@
 
 Covers the test data from chapter 11 of docs/analysis/metody-statystyczne.md and
 the edge cases: a missing day, a zero return, NaN and infinite values, a constant
-price, an empty sample and invalid candles.
+price, an empty sample and invalid candles, as well as the event study, the Holm
+correction and relative volume.
 
 Run from this directory:  python -m unittest -v test_stats_methods
 """
@@ -74,7 +75,7 @@ class ChapterElevenTest(unittest.TestCase):
 
 
 class EdgeCaseTest(unittest.TestCase):
-    """Cases from chapter 11.3 of the methods document."""
+    """Cases from chapters 11.3 and 11.4 of the methods document."""
 
     def test_zero_return_is_left_out_of_up_share(self):
         d = sm.descriptive(series([100, 110, 110, 99]))
@@ -190,6 +191,46 @@ class EdgeCaseTest(unittest.TestCase):
         self.assertEqual(dd["trough_date"], date(2026, 1, 3))
         self.assertEqual(dd["duration_days"], 1)
         self.assertEqual(dd["recovery_date"], date(2026, 1, 4))
+
+    def test_holm_adjust_counts_missing_tests(self):
+        adj = sm.holm_adjust([0.01, math.nan, 0.04, 0.02])
+        self.assertAlmostEqual(adj[0], 0.04)
+        self.assertTrue(math.isnan(adj[1]))
+        self.assertAlmostEqual(adj[3], 0.06)
+        self.assertAlmostEqual(adj[2], 0.08)
+
+    def test_event_study_mackinlay_and_missing_day(self):
+        m_ret = [0.01, -0.02, 0.03, -0.01, 0.02] + [0.0] * 10 + [0.01, -0.02, 0.00]
+        r_ret = [0.02, -0.03, 0.05, -0.01, 0.03] + [0.0] * 10 + [-0.01, -0.08, 0.01]
+        p_btc = series(100.0 * np.exp(np.insert(np.cumsum(m_ret), 0, 0.0)))
+        p_bnb = series(100.0 * np.exp(np.insert(np.cumsum(r_ret), 0, 0.0)))
+        res = sm.event_study(p_bnb, p_btc, "2026-01-18", win_before=1, win_after=1, est_before=16, est_after=12)
+        self.assertEqual(res["estimation_days"], 5)
+        self.assertAlmostEqual(res["alpha"], 0.0027906977, delta=TOLERANCE)
+        self.assertAlmostEqual(res["beta"], 1.5348837209, delta=TOLERANCE)
+        self.assertAlmostEqual(res["s_eps"], 0.0030499714, delta=TOLERANCE)
+        self.assertAlmostEqual(res["car"], -0.0730232558, delta=TOLERANCE)
+        self.assertAlmostEqual(res["car_alpha0"], -0.0646511628, delta=TOLERANCE)
+        self.assertAlmostEqual(res["se_car"], 0.0069922309, delta=TOLERANCE)
+        self.assertAlmostEqual(res["t"], -10.4434846522, delta=TOLERANCE)
+        self.assertAlmostEqual(res["p_value"], 0.0018740542, delta=TOLERANCE)
+        self.assertAlmostEqual(res["asset_return"], math.exp(-0.08) - 1, delta=TOLERANCE)
+        self.assertAlmostEqual(res["market_return"], math.exp(-0.01) - 1, delta=TOLERANCE)
+
+        missing = sm.event_study(p_bnb.drop(pd.Timestamp("2026-01-18")), p_btc, "2026-01-18",
+                                 win_before=1, win_after=1, est_before=16, est_after=12)
+        self.assertTrue(math.isnan(missing["car"]))
+        self.assertIsNotNone(missing["reason"])
+
+    def test_relative_volume_and_zero_volume(self):
+        v = sm.relative_volume(series([100.0, 200.0, 300.0, 400.0]), window=3)
+        self.assertAlmostEqual(v.iloc[-1], math.log(2.0), delta=TOLERANCE)
+        v_zero = sm.relative_volume(series([100.0, 200.0, 300.0, 0.0]), window=3)
+        self.assertTrue(math.isnan(v_zero.iloc[-1]))
+        rel = sm.volume_relation(series([100, 110, 99, 108.9, 102.366]),
+                                 series([100, 200, 300, 400, 500]), window=3)
+        self.assertEqual(rel["observations"], 2)
+        self.assertIsNotNone(rel["warning"])
 
 
 def candles(days, start=date(2026, 1, 1), overrides=None):
