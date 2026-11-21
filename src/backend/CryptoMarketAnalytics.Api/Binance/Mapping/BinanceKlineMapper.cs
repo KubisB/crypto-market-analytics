@@ -8,6 +8,8 @@ namespace CryptoMarketAnalytics.Api.Binance.Mapping;
 public static class BinanceKlineMapper
 {
     private static readonly TimeSpan KlineDuration = TimeSpan.FromDays(1) - TimeSpan.FromMilliseconds(1);
+    private static readonly long MinUnixTimeMilliseconds = DateTimeOffset.MinValue.ToUnixTimeMilliseconds();
+    private static readonly long MaxUnixTimeMilliseconds = DateTimeOffset.MaxValue.ToUnixTimeMilliseconds();
 
     /// <summary>
     /// Reads the klines response: an array of candles, each an array of 12 values. Used fields:
@@ -39,6 +41,12 @@ public static class BinanceKlineMapper
             if (row[0].ValueKind != JsonValueKind.Number || !row[0].TryGetInt64(out var openTimeMs))
             {
                 rejected.Add("missing open time");
+                continue;
+            }
+
+            if (openTimeMs < MinUnixTimeMilliseconds || openTimeMs > MaxUnixTimeMilliseconds)
+            {
+                rejected.Add($"open time {openTimeMs} ms is out of the supported date range");
                 continue;
             }
 

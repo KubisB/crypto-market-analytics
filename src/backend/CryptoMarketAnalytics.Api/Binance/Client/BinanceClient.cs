@@ -77,13 +77,22 @@ public class BinanceClient(
 
         try
         {
-            return await SendAsync(new Uri(settings.BaseUrl!, path), read, cancellationToken);
+            try
+            {
+                return await SendAsync(new Uri(settings.BaseUrl!, path), read, cancellationToken);
+            }
+            catch (Exception exception) when (settings.FallbackBaseUrl is not null && IsServerSideFailure(exception, cancellationToken))
+            {
+                logger.LogWarning(exception, "Binance API at {BaseUrl} failed, retrying with {FallbackBaseUrl}",
+                    settings.BaseUrl, settings.FallbackBaseUrl);
+                return await SendAsync(new Uri(settings.FallbackBaseUrl, path), read, cancellationToken);
+            }
         }
-        catch (Exception exception) when (settings.FallbackBaseUrl is not null && IsServerSideFailure(exception, cancellationToken))
+        catch (Exception exception) when (IsConnectionFailure(exception, cancellationToken))
         {
-            logger.LogWarning(exception, "Binance API at {BaseUrl} failed, retrying with {FallbackBaseUrl}",
-                settings.BaseUrl, settings.FallbackBaseUrl);
-            return await SendAsync(new Uri(settings.FallbackBaseUrl, path), read, cancellationToken);
+            // Callers handle every Binance failure as BinanceApiException; cancellation by the caller is not wrapped.
+            throw new BinanceApiException(
+                $"Binance API could not be reached for {path.Split('?')[0]}: {exception.Message}", innerException: exception);
         }
     }
 
@@ -122,9 +131,18 @@ public class BinanceClient(
     /// <summary>Network errors, timeouts and 5xx responses; 4xx responses are not retried on the fallback server.</summary>
     private static bool IsServerSideFailure(Exception exception, CancellationToken cancellationToken) => exception switch
     {
-        HttpRequestException => true,
-        TaskCanceledException => !cancellationToken.IsCancellationRequested,
         BinanceApiException { StatusCode: { } statusCode } => (int)statusCode >= 500,
+        _ => IsConnectionFailure(exception, cancellationToken),
+    };
+
+    /// <summary>
+    /// The server could not be reached or the connection broke while reading the response. A timeout of the
+    /// <see cref="HttpClient"/> is a <see cref="TaskCanceledException"/> without cancellation by the caller.
+    /// </summary>
+    private static bool IsConnectionFailure(Exception exception, CancellationToken cancellationToken) => exception switch
+    {
+        HttpRequestException or IOException => true,
+        TaskCanceledException => !cancellationToken.IsCancellationRequested,
         _ => false,
     };
 

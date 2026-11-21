@@ -141,6 +141,17 @@ public class BinanceClientTests
     }
 
     [Fact]
+    public async Task GetDailyKlines_ReportsConnectionFailureAsBinanceApiException()
+    {
+        var handler = new FakeHttpMessageHandler(_ => throw new HttpRequestException("No such host is known."));
+
+        await Assert.ThrowsAsync<BinanceApiException>(() =>
+            CreateClient(handler).GetDailyCandlesAsync("BNBUSDT", new(2026, 10, 12), new(2026, 10, 12)));
+
+        Assert.Equal(["data-api.binance.vision", "api.binance.com"], handler.Requests.Select(uri => uri.Host));
+    }
+
+    [Fact]
     public async Task GetDailyKlines_ThrowsWhenResponseIsNotAnArray()
     {
         var handler = new FakeHttpMessageHandler(_ => FakeHttpMessageHandler.Json("""{"code":0}"""));
@@ -157,6 +168,8 @@ public class BinanceClientTests
     [InlineData("""[1791766800000, "754.24", "758.03", "732.26", "732.91", "108635.607", 1791853199999, "81335469.84", 509024, "0", "0", "0"]""")]
     // Lasts one hour instead of one day.
     [InlineData("""[1791763200000, "754.24", "758.03", "732.26", "732.91", "108635.607", 1791766799999, "81335469.84", 509024, "0", "0", "0"]""")]
+    // Open time beyond the range of DateTimeOffset.
+    [InlineData("""[999999999999999999, "754.24", "758.03", "732.26", "732.91", "108635.607", 1791849599999, "81335469.84", 509024, "0", "0", "0"]""")]
     public async Task GetDailyKlines_SkipsInvalidKlineAndKeepsTheRest(string invalidKline)
     {
         var nextDay = """[1791849600000, "1.0", "2.0", "0.5", "1.5", "10.0", 1791935999999, "15.0", 100, "0", "0", "0"]""";

@@ -12,8 +12,16 @@ public class SynchronizationOptions
 
     /// <summary>
     /// How often the application checks whether yesterday's candle is stored. Binance is called only when it is not,
-    /// so in practice the data is downloaded once a day, shortly after midnight UTC, and again after a failed attempt.
+    /// so in practice the data is downloaded once a day, shortly after midnight UTC plus <see cref="ClosedCandleDelay"/>,
+    /// and again after a failed attempt.
     /// </summary>
     [Range(typeof(TimeSpan), "00:01:00", "1.00:00:00")]
     public TimeSpan CheckInterval { get; set; }
+
+    /// <summary>
+    /// How long after midnight UTC the candle of the previous day is downloaded, so Binance has finished it.
+    /// The API still treats the day as closed from midnight; only the download waits.
+    /// </summary>
+    [Range(typeof(TimeSpan), "00:00:00", "01:00:00")]
+    public TimeSpan ClosedCandleDelay { get; set; }
 }

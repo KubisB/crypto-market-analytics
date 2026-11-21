@@ -19,6 +19,7 @@ public class DailyCandleSynchronizer(
     ISyncStateRepository states,
     DailyCandleValidator validator,
     IOptions<MarketOptions> marketOptions,
+    IOptions<SynchronizationOptions> synchronizationOptions,
     TimeProvider timeProvider,
     ILogger<DailyCandleSynchronizer> logger)
 {
@@ -49,12 +50,19 @@ public class DailyCandleSynchronizer(
         return null;
     }
 
-    /// <summary>Synchronises one symbol and records the outcome in its <see cref="SymbolSyncState"/>.</summary>
-    /// <exception cref="BinanceApiException">Binance failed; the error is stored in the sync state before it is rethrown.</exception>
+    /// <summary>
+    /// Synchronises one symbol and records the outcome in its <see cref="SymbolSyncState"/>.
+    /// <see cref="SymbolSyncState.LastDate"/> becomes the last stored candle, so days missing at the end of the range
+    /// are downloaded again on the next run; days missing in the middle stay missing.
+    /// </summary>
+    /// <exception cref="BinanceApiException">
+    /// Binance failed or could not be reached; the error is stored in the sync state before it is rethrown.
+    /// </exception>
     public async Task SyncAsync(string symbol, CancellationToken cancellationToken = default)
     {
         var now = timeProvider.GetUtcNow();
-        var yesterday = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-1);
+        // Yesterday, once Binance has had ClosedCandleDelay after midnight UTC to finish its candle.
+        var yesterday = DateOnly.FromDateTime((now - synchronizationOptions.Value.ClosedCandleDelay).UtcDateTime).AddDays(-1);
         var earliest = marketOptions.Value.EarliestDate;
         var state = await states.GetAsync(symbol, cancellationToken) ?? new SymbolSyncState(symbol);
 
@@ -83,16 +91,30 @@ public class DailyCandleSynchronizer(
             var valid = validator.Validate(symbol, downloaded);
             await candles.SaveAsync(symbol, valid, cancellationToken);
 
-            var missing = yesterday.DayNumber - from.DayNumber + 1 - valid.Count;
-            if (missing > 0)
+            // The validator returns the candles sorted by date. An empty response keeps the previous last date.
+            var lastDate = valid.Count > 0 && (state.LastDate is null || valid[^1].Date > state.LastDate)
+                ? valid[^1].Date
+                : state.LastDate;
+            var lastInRange = lastDate is { } date && date >= from ? date : from.AddDays(-1);
+
+            var gaps = lastInRange.DayNumber - from.DayNumber + 1 - valid.Count;
+            if (gaps > 0)
             {
-                logger.LogWarning("{Symbol}: {Missing} days from {From} to {To} have no valid candle and stay missing", symbol, missing, from, yesterday);
+                logger.LogWarning("{Symbol}: {Missing} days from {From} to {To} have no valid candle and stay missing",
+                    symbol, gaps, from, lastInRange);
+            }
+
+            var pending = yesterday.DayNumber - lastInRange.DayNumber;
+            if (pending > 0)
+            {
+                logger.LogWarning("{Symbol}: no valid candle for the last {Pending} days up to {To}; they are downloaded again on the next run",
+                    symbol, pending, yesterday);
             }
 
             await states.SaveAsync(state with
             {
                 FirstDate = coversStart ? state.FirstDate : earliest,
-                LastDate = yesterday,
+                LastDate = lastDate,
                 LastSyncedAt = now,
                 LastAttemptAt = now,
                 LastError = null,

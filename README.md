@@ -188,7 +188,7 @@ Example requests are also in `src/backend/CryptoMarketAnalytics.Api/CryptoMarket
 - Analysed pairs and period are in the `Market` section of `appsettings.json`: `Symbols` (`BNBUSDT`, `BTCUSDT`), `AnalysisStartDate` (`2023-01-01`), `WarmupDays` (`200`, data before the start needed by rolling indicators) and `LargePriceChangeThreshold` (`0.5`, daily change flagged for manual review).
 - Binance API settings are in the `Binance` section: `BaseUrl` (`https://data-api.binance.vision`), optional `FallbackBaseUrl` used when the primary server fails (`https://api.binance.com`), `Timeout` and `UserAgent`.
 - `Storage:DatabasePath` is the SQLite file, relative to the project directory (`../../../data-base/market.db`, i.e. `data-base/` in the repository root).
-- `Synchronization`: `Enabled` and `CheckInterval` (`00:15:00`) — how often the backend checks whether yesterday's candle is stored; Binance is called only when it is not.
+- `Synchronization`: `Enabled`, `CheckInterval` (`00:15:00`) — how often the backend checks whether yesterday's candle is stored; Binance is called only when it is not — and `ClosedCandleDelay` (`00:05:00`) — how long after midnight UTC yesterday's candle is downloaded.
 - All sections are validated at startup: a missing or invalid value stops the application with an error naming the setting.
 - The Binance market data API is public, so **no API key is needed** to run the application at the start.
 - If secrets are added later, they are **never committed to the repository**.

@@ -6,7 +6,7 @@ namespace CryptoMarketAnalytics.Api.Synchronization;
 /// <summary>
 /// Runs <see cref="DailyCandleSynchronizer"/> when the application starts and then every
 /// <see cref="SynchronizationOptions.CheckInterval"/>, so the data is refreshed shortly after midnight UTC
-/// and retried automatically after Binance was unavailable.
+/// (plus <see cref="SynchronizationOptions.ClosedCandleDelay"/>) and retried automatically after Binance was unavailable.
 /// </summary>
 public class DailyCandleSyncBackgroundService(
     IServiceScopeFactory scopeFactory,
