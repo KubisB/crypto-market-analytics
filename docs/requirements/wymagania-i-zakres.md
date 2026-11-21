@@ -46,7 +46,9 @@ Poza zakresem:
 
 Aplikacja jest dla osób znających podstawy statystyki, ale niekoniecznie rynek kryptowalut, więc przy wskaźnikach są krótkie wyjaśnienia.
 
-## 6. Historyjki użytkownika
+## 6. Wymagania funkcjonalne
+
+Wymagania funkcjonalne są zapisane w formie historyjek użytkownika.
 
 ### 6.1. Wykres ceny BNB, konieczne
 
@@ -69,7 +71,7 @@ Jako użytkownik chcę wybrać zakres dat analizy.
 ### 6.3. Tabela statystyk, konieczne
 
 Jako użytkownik chcę zobaczyć najważniejsze statystyki w jednym miejscu.
-- tabela zawiera: liczbę dni, średni zwrot, medianę, odchylenie standardowe dziennych zwrotów logarytmicznych, zmienność roczną, najgorszy i najlepszy dzień z datami, odsetek dni wzrostowych, skośność, kurtozę, maksymalne obsunięcie, zwrot za cały okres i CAGR,
+- tabela zawiera: liczbę cen, liczbę zwrotów i liczbę dni kalendarzowych okresu, średni zwrot, medianę, odchylenie standardowe dziennych zwrotów logarytmicznych, zmienność roczną, najgorszy i najlepszy dzień z datami, odsetek dni wzrostowych, skośność, kurtozę, maksymalne obsunięcie, zwrot za cały okres i CAGR,
 - przy każdej wartości jest krótki opis,
 - wyniki są zgodne z obliczeniami kontrolnymi.
 
@@ -115,8 +117,8 @@ Na stronie widać źródło danych, np. „Binance, BNB/USDT, świece dzienne UT
 Szczegóły źródła są w rozdziale 10, a wzory w dokumencie o metodach.
 - dane to dzienne świece `BNBUSDT` i `BTCUSDT` z publicznego API Binance, tylko zamknięte, do wczoraj włącznie,
 - dane są aktualizowane raz dziennie po północy UTC, a gdy API jest niedostępne, wyświetlane są ostatnie zapisane dane z datą aktualizacji,
-- walidacja: brak duplikatów dat, rosnąca kolejność, cena najniższa nie większa od otwarcia i zamknięcia, najwyższa nie mniejsza, ceny dodatnie, wolumen nieujemny, a błędne rekordy są odrzucane,
-- brakujące dni nie są uzupełniane, a zwrot obejmujący lukę nie wchodzi do statystyk dziennych, zgodnie z dokumentem o metodach. Dzienne zmiany ceny powyżej 50% są oznaczane do ręcznej weryfikacji, ale nie usuwane,
+- walidacja: brak duplikatów dat, rosnąca kolejność, wszystkie liczby obecne i skończone, świeca zaczyna się o 00:00 UTC i trwa jedną dobę, cena najniższa nie większa od otwarcia i zamknięcia, najwyższa nie mniejsza, ceny dodatnie, wolumen nieujemny, a błędne rekordy są odrzucane,
+- kompletność jest sprawdzana dla całego żądanego okresu, łącznie z jego początkiem i końcem, brakujące dni nie są uzupełniane, a zwrot obejmujący lukę nie wchodzi do statystyk dziennych, zgodnie z dokumentem o metodach. Dzienne zmiany ceny powyżej 50% są oznaczane do ręcznej weryfikacji, ale nie usuwane,
 - BNB z BTC są porównywane tylko po wspólnych datach,
 - gdy danych jest za mało na daną statystykę, wyświetlana jest pusta wartość z przyczyną, a nie błąd.
 
@@ -205,7 +207,7 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 
 - Zwroty i wskaźniki procentowe są ułamkami, np. 0,05, a na procenty zamieniane dopiero przy wyświetlaniu.
 - Obsunięcie jest zawsze ujemne albo równe 0, korelacja mieści się między −1 a 1, a beta może być dowolna.
-- Z N cen powstaje N−1 zwrotów, pierwszy dzień okresu nie ma zwrotu.
+- Z N cen z kolejnych dni powstaje N−1 zwrotów, pierwszy dzień okresu nie ma zwrotu, a każda luka zmniejsza liczbę zwrotów. Liczba cen, liczba zwrotów i liczba dni kalendarzowych to trzy różne wielkości.
 - Zmienność na skalę roczną przelicza się mnożąc przez pierwiastek z 365, a nie przez 365 ani 252.
 
 ### 11.3. Wymagana liczba danych
@@ -221,10 +223,10 @@ Podstawy rynku kryptowalut i konwencje obliczeń. Wzory są w dokumencie o metod
 - histogram: 2 zwroty, wiarygodnie od 30,
 - korelacja i beta z BTC: 2 wspólne zwroty, wiarygodnie od 30,
 - korelacja krocząca: 90 wspólnych zwrotów,
-- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla opcjonalnego okna od −5 do +5 dni 5 dni po nim, niezależnie od wybranego okresu,
+- analiza wydarzenia: 120 dni przed wydarzeniem i 1 dzień po nim, a dla drugiego okna od −5 do +5 dni 5 dni po nim, niezależnie od wybranego okresu,
 - wolumen: 31 dni, bo obrót względny wymaga średniej z 30 dni, wiarygodnie od 90.
 
-Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało danych, wymagane 365 dni”. Między minimum a poziomem wiarygodnym wynik jest liczony z ostrzeżeniem.
+Poniżej minimum zwracana jest pusta wartość z przyczyną, np. „za mało danych: wymagane 365 zwrotów, w okresie jest 90”. Pusta jest też wartość nieokreślona przy zerowej zmienności, np. skośność przy stałej cenie. Między minimum a poziomem wiarygodnym wynik jest liczony z ostrzeżeniem.
 
 ### 11.4. Wskaźniki kroczące
 
