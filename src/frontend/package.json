@@ -18,7 +18,10 @@
     "check:format": "cd ../.. && prettier --check --experimental-cli src/frontend/src tests/frontend"
   },
   "dependencies": {
-    "vue": "^3.5.42"
+    "chart.js": "^4.6.1",
+    "lightweight-charts": "^5.3.0",
+    "vue": "^3.5.42",
+    "vue-chartjs": "^5.3.7"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.5",
@@ -27,7 +30,7 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/eslint-plugin": "^1.6.27",
     "@vue/eslint-config-typescript": "^14.9.0",
-    "@vue/test-utils": "^2.5.0",
+    "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
